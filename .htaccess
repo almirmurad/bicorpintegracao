@@ -1,0 +1,8 @@
+RewriteEngine On
+
+ErrorDocument 403 http://localhost/bicorpIntegracao/public/error
+
+<Files .env>
+ Order allow,deny
+ Deny from all
+</Files>
