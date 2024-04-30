@@ -2,9 +2,20 @@
 namespace src\controllers;
 
 use \core\Controller;
+
 use src\handlers\DealHandler;
 use src\handlers\LoginHandler;
+use src\exceptions\WebhookReadErrorException;
+use src\exceptions\BaseFaturamentoInexistenteException;
+use src\exceptions\ClienteInexistenteException;
+use src\exceptions\CnpjClienteInexistenteException;
+use src\exceptions\PedidoInexistenteException;
+use src\exceptions\PedidoRejeitadoException;
+use src\exceptions\ProdutoInexistenteException;
+use src\exceptions\VendedorInexistenteException;
 use src\models\Deal;
+
+
 
 class DealController extends Controller {
     
@@ -50,26 +61,62 @@ class DealController extends Controller {
         // $appKey = $this->appKey;
         // $secrets = $this->secrets;
         // $ncc = $this->ncc;
-
-        $response = DealHandler::readDealHook($json, $baseApi, $method, $apiKey);
-
-        if ($response) {
-            echo"<pre>";
-            json_encode($response);
-            print_r($response);
-            //grava log
-            //$decoded = json_decode($response, true);
+        try{
+            $response = DealHandler::readDealHook($json, $baseApi, $method, $apiKey);
+            if ($response) {
+                echo"<pre>";
+                json_encode($response);
+                print_r($response);
+                //grava log
+                //$decoded = json_decode($response, true);
+                ob_start();
+                var_dump($response);
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+                exit;            
+            }
+        }catch(WebhookReadErrorException $e){
+            echo '<pre>';
+            print $e->getMessage();           
+        }
+        catch(BaseFaturamentoInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(CnpjClienteInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(PedidoInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(ProdutoInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(ClienteInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(VendedorInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(PedidoRejeitadoException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        finally{
             ob_start();
-            var_dump($response);
+            var_dump($e->getMessage());
             $input = ob_get_contents();
             ob_end_clean();
             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-            exit;            
-        } else {
-            $error = "Erro ao ler dados do webhook";
-            echo $error;
-            exit;
+            exit; 
         }
+        
     }
 
 }

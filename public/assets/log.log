@@ -339,3 +339,114 @@ array(3) {
   string(147) "ERROR: É obrigatório o preenchimento da tag [perc_desconto_pedido] ou [valor_desconto_pedido] quando a tag [tipo_desconto_pedido] for preenchida."
 }
 
+string(55) "Não era um Card Ganho ou não havia venda na proposta!"
+
+string(55) "Não era um Card Ganho ou não havia venda na proposta!"
+
+string(55) "Não era um Card Ganho ou não havia venda na proposta!"
+
+string(31) "Base de faturamento inexistente"
+
+string(31) "Base de faturamento inexistente"
+
+string(31) "Base de faturamento inexistente"
+
+string(55) "Não era um Card Ganho ou não havia venda na proposta!"
+
+string(77) "Não era um Card Ganho ou não havia venda na proposta do webhook Id 40014790"
+
+array(3) {
+  ["webhookMessage"]=>
+  string(63) "Novo webhook criado id = Id do cadastro do webhook no banco: 65"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 16"
+  ["returnPedidoOmie"]=>
+  string(49) "ERROR: O preenchimento da tag [det] obrigatório!"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(63) "Novo webhook criado id = Id do cadastro do webhook no banco: 66"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 17"
+  ["returnPedidoOmie"]=>
+  string(49) "ERROR: O preenchimento da tag [det] obrigatório!"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(63) "Novo webhook criado id = Id do cadastro do webhook no banco: 67"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 18"
+  ["returnPedidoOmie"]=>
+  string(49) "ERROR: O preenchimento da tag [det] obrigatório!"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(63) "Novo webhook criado id = Id do cadastro do webhook no banco: 68"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 19"
+  ["returnPedidoOmie"]=>
+  string(49) "ERROR: O preenchimento da tag [det] obrigatório!"
+}
+
+string(73) "CNPJ do cliente está errado ou cliente não está cadastrado no Omie ERP"
+
+array(3) {
+  ["webhookMessage"]=>
+  string(63) "Novo webhook criado id = Id do cadastro do webhook no banco: 79"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 20"
+  ["returnPedidoOmie"]=>
+  string(49) "ERROR: O preenchimento da tag [det] obrigatório!"
+}
+
+string(67) "Venda Id: 402222465 não encontrada no Ploomes webhook id: 40014790"
+
+array(3) {
+  ["webhookMessage"]=>
+  string(63) "Novo webhook criado id = Id do cadastro do webhook no banco: 90"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 21"
+  ["returnPedidoOmie"]=>
+  string(62) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 0"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 105"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 22"
+  ["returnPedidoOmie"]=>
+  string(62) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 0"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 106"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 23"
+  ["returnPedidoOmie"]=>
+  string(62) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 0"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 108"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 25"
+  ["returnPedidoOmie"]=>
+  string(62) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 0"
+}
+-------string(112) "ERROR: Pedido já cadastrado para o Código de Integração [402248583], Código [4466636340] e Número [4977] !"
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 121"
+  ["dealMessage"]=>
+  string(79) "Mensagem ao salvar o deal no banco de dadosId do cadastro da Venda no banco: 38"
+  ["returnPedidoOmie"]=>
+  string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 4978"
+}
+
