@@ -25,6 +25,9 @@
                     </div>
                     <div class="content-box">
                         <div class="content-info">
+                            <pre>
+                            
+                            </pre>
                             <h3><?=$total;?></h3>
                             <span>TMA: 0:00:00</span>
                             <a href="">Ir para monitoramento</a>

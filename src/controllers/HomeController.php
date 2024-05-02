@@ -17,11 +17,11 @@ class HomeController extends Controller {
     }
 
     public function index() {
-        $total = Deal::select('id')->count();        
+        $total = Deal::select('id')->count();      
         $data = [
             'pagina' => 'Dashboard',
             'loggedUser'=>$this->loggedUser,
-            'total'=>$total
+            'total'=>$total,
         ];
         $this->render('gerenciador.pages.index', $data);
     }

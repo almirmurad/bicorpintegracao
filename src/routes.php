@@ -20,4 +20,8 @@ $router->post('/winDeal', 'DealController@winDeal');
 //Interactions
 $router->get('/interactions', 'InteractionController@index');
 $router->post('/newInteraction', 'InteractionController@createInteraction');
+//Configurações
+$router->get('/configs', 'ConfigController@index');
+$router->post('/define', 'ConfigController@defineConfig');
+
 

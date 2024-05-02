@@ -6,7 +6,7 @@ session_start();
 require '../vendor/autoload.php';
 require '../src/routes.php';
 
-$dotenv = Dotenv::createImmutable('../', '.env');
+$dotenv = Dotenv::createUnsafeImmutable('../', '.env');
 $dotenv->load();
 
 $router->run( $router->routes );

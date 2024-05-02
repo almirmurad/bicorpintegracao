@@ -52,6 +52,9 @@
 .column{
     flex-direction: column;
 }
+.row{
+    flex-direction: row;
+}
 .area-flash{
     align-items: center;
     padding: 10px;
@@ -317,12 +320,33 @@ section{
     justify-content: center;
     align-items: center;
 }
-.area-form{
+.area-form,.area-form-configs{
     width: 60%;
     display: flex;
     flex-direction: column;
 }
+.area-form-configs{
+   width: 100%;
+   flex-direction: row;
+   flex-wrap: wrap;
+}
+.content-config{
+    display: flex;
+    flex-direction: row;
+}
+
+
+.config-top,.config-bottom{
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.title-congig{
+    padding: 20px;
+
+}
 .campo{
+    flex: 1;
     padding: 10px;
     margin:10px 0;
     display: flex;
@@ -330,10 +354,11 @@ section{
     align-items: center;
     border:2px solid #172272;
 }
-.form-lbl, .form-cmps{
+.form-lbl, form-cmps{
     display: flex;
     flex: 1;
     justify-content: flex-start;
+    padding-right: 10px;
 }
 .form-cmps{
     justify-content: center;
@@ -341,7 +366,9 @@ section{
     border-radius: 5px;
     border: 2px solid #a9a9a9;
 
+
 }
+
 
 input:focus{
     
