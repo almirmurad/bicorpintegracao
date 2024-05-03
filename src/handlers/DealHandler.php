@@ -153,10 +153,10 @@ class DealHandler
             //busca a venda no ploomes
              (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes webhook id: '.$webhook->webhookId.'',1004 );
 
-             echo 'chegou em order<br>';
-             print_r($arrayRequestOrder);
+            //  echo 'chegou em order<br>';
+            //  print_r($arrayRequestOrder);
              
-             exit;
+            //  exit;
 
             //array de produtos da venda
             $productsRequestOrder = $arrayRequestOrder[0]->Products;

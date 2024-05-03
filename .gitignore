@@ -1,4 +1,5 @@
 composer.phar
 /vendor/
+/public/assets/uploads/
 .DS_Store
 .env

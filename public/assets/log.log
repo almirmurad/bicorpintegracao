@@ -494,3 +494,32 @@ string(67) "Venda Id: 402149904 não encontrada no Ploomes webhook id: 40014790"
 
 string(67) "Venda Id: 402124669 não encontrada no Ploomes webhook id: 40014790"
 
+string(97) "ERROR: O produto [PDR35] está inativo !(Id: 3341714379 / Integração: ) - Tag: [codigo_produto]"
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 147"
+  ["dealMessage"]=>
+  string(32) "Id do Deal no Banco de Dados: 40"
+  ["returnPedidoOmie"]=>
+  string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 1397"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 148"
+  ["dealMessage"]=>
+  string(32) "Id do Deal no Banco de Dados: 41"
+  ["returnPedidoOmie"]=>
+  string(64) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 588"
+}
+
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 149"
+  ["dealMessage"]=>
+  string(32) "Id do Deal no Banco de Dados: 42"
+  ["returnPedidoOmie"]=>
+  string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 5016"
+}
+

@@ -23,5 +23,10 @@ $router->post('/newInteraction', 'InteractionController@createInteraction');
 //Configurações
 $router->get('/configs', 'ConfigController@index');
 $router->post('/define', 'ConfigController@defineConfig');
+//Users
+$router->get('/users', 'UserController@listUsers');
+$router->get('/addUser','UserController@addUser');
+$router->post('/addUser','UserController@addUserAction');
+$router->get('/delUser/{id}', 'UserController@delUser');
 
 
