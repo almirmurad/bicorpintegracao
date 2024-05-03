@@ -450,3 +450,47 @@ array(3) {
   string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 4978"
 }
 
+string(60) "Base de faturamento inexistente para o webhook Id: 40014790 "
+
+string(67) "Venda Id: 402248583 não encontrada no Ploomes webhook id: 40014790"
+
+string(77) "Não era um Card Ganho ou não havia venda na proposta do webhook Id 40014790"
+
+string(67) "Venda Id: 402211265 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402204605 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402202630 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402170135 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402168271 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402168241 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402161476 não encontrada no Ploomes webhook id: 40014790"
+
+string(60) "Base de faturamento inexistente para o webhook Id: 40015752 "
+
+string(77) "Não era um Card Ganho ou não havia venda na proposta do webhook Id 40015752"
+
+string(67) "Venda Id: 402160713 não encontrada no Ploomes webhook id: 40014790"
+
+string(77) "Não era um Card Ganho ou não havia venda na proposta do webhook Id 40014790"
+
+string(77) "Não era um Card Ganho ou não havia venda na proposta do webhook Id 40015752"
+
+string(60) "Base de faturamento inexistente para o webhook Id: 40015752 "
+
+string(67) "Venda Id: 402152929 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402152151 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402152121 não encontrada no Ploomes webhook id: 40014790"
+
+string(73) "Cliente não informado ou não cadastrado no Omie ERP webhookId: 40014790"
+
+string(67) "Venda Id: 402149904 não encontrada no Ploomes webhook id: 40014790"
+
+string(67) "Venda Id: 402124669 não encontrada no Ploomes webhook id: 40014790"
+

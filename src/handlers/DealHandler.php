@@ -5,6 +5,7 @@ namespace src\handlers;
 use src\exceptions\BaseFaturamentoInexistenteException;
 use src\exceptions\ClienteInexistenteException;
 use src\exceptions\CnpjClienteInexistenteException;
+use src\exceptions\EmailVendedorNaoExistenteException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
@@ -72,7 +73,7 @@ class DealHandler
             $deal->title = $decoded['New']['Title']; // Título do Deal
             $deal->contactId = $decoded['New']['ContactId']; // Contatos relacionados
             // Busca o CNPJ do contato 
-            (!empty($contactCnpj = Self::contactCnpj($deal->contactId, $baseApi, $method,  $apiKey))) ? $contactCnpj : throw new CnpjClienteInexistenteException('Cliente não informado ou não cadastrado no Omie ERP webhookId: '.$webhook->webhookId.'',1004); //cnpj do cliente
+            (!empty($contactCnpj = Self::contactCnpj($deal->contactId, $baseApi, $method,  $apiKey))) ? $contactCnpj : throw new CnpjClienteInexistenteException('Cliente não informado ou não cadastrado no Omie ERP webhookId: '.$webhook->webhookId.'',1002); //cnpj do cliente
             $deal->contactName = $decoded['New']['ContactName']; // Nome do Contato no Deal
             $deal->personId = $decoded['New']['PersonId']; // Id do Contato
             $deal->personName = $decoded['New']['PersonName']; // Nome do contato
@@ -93,7 +94,8 @@ class DealHandler
             $deal->lossReasonId = $decoded['New']['LossReasonId']; // Motivo de perda
             $deal->originId = $decoded['New']['OriginId']; // Origem
             $deal->ownerId = $decoded['New']['OwnerId']; // Responsável
-            $mailVendedor = Self::ownerMail($deal->ownerId, $baseApi, $method,  $apiKey);
+            (!empty($mailVendedor = Self::ownerMail($deal->ownerId, $baseApi, $method,  $apiKey)))?$mailVendedor:
+            throw new EmailVendedorNaoExistenteException('Não foi encontrado o email deste vendedor. Webhook'.$webhook->webhookId.'', 1003);
             $deal->startDate = $decoded['New']['StartDate']; // Início
             $deal->finishDate = $decoded['New']['FinishDate']; // Término
             $deal->currencyId = $decoded['New']['CurrencyId']; // Moeda
@@ -149,12 +151,12 @@ class DealHandler
             }
             
             //busca a venda no ploomes
-             (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes webhook id: '.$webhook->webhookId.'',1005 );
+             (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes webhook id: '.$webhook->webhookId.'',1004 );
 
-            //  echo 'chegou em order<br>';
-            //  print_r($arrayRequestOrder);
+             echo 'chegou em order<br>';
+             print_r($arrayRequestOrder);
              
-            //  exit;
+             exit;
 
             //array de produtos da venda
             $productsRequestOrder = $arrayRequestOrder[0]->Products;
@@ -177,7 +179,7 @@ class DealHandler
                 $det['produto'] = [];
                 $idPrd = $prdItem->Product->Code;
                 //encontra o id do produto no omie atraves do Code do ploomes
-                (!empty($idProductOmie = Self::buscaIdProductOmie($appKey, $appSecret, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie webhookId: '.$webhook->webhookId.'');
+                (!empty($idProductOmie = Self::buscaIdProductOmie($appKey, $appSecret, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie webhookId: '.$webhook->webhookId.'',1005);
                 $det['produto']['codigo_produto'] = $idProductOmie;
                 $det['produto']['quantidade'] = $prdItem->Quantity;
                 $det['produto']['tipo_desconto'] = 'P';
@@ -187,7 +189,7 @@ class DealHandler
                 $productsOrder[] = $det;
             }
                
-            //busca Nota da Proposta (Quote)
+            //busca Observação da Proposta (Quote)
             $notes = strip_tags(Self::requestQuote($deal->lastQuoteId, $baseApi, $method, $apiKey));
             // echo'<pre>';
             // print_r($notes);
@@ -197,16 +199,16 @@ class DealHandler
             $dealCreatedId = Self::saveDeal($deal);   
             $message['dealMessage'] ='Id do Deal no Banco de Dados: '.$dealCreatedId;     
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
-            (!empty($idClienteOmie = Self::clienteIdOmie($contactCnpj, $appKey, $appSecret))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! WebhookId: '.$webhook->webhookId.'',1007);
+            (!empty($idClienteOmie = Self::clienteIdOmie($contactCnpj, $appKey, $appSecret))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! WebhookId: '.$webhook->webhookId.'',1006);
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
-            (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP! WebhookId: '.$webhook->webhookId.'',1008);
+            (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP! WebhookId: '.$webhook->webhookId.'',1007);
             //inclui o pedido no omie
             $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes);
 
             if ($incluiPedidoOmie) {
 
                 if(isset($incluiPedidoOmie->faultstring)){
-                    throw new PedidoRejeitadoException($incluiPedidoOmie->faultstring,1010);
+                    throw new PedidoRejeitadoException($incluiPedidoOmie->faultstring,1008);
                 }
                 
                 $message['returnPedidoOmie'] ='Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: '.intval($incluiPedidoOmie->numero_pedido);
@@ -223,7 +225,7 @@ class DealHandler
             //IntegraHandler::montaTable($deal, $prop);//monta a tabela html pra retornar a view ("legado").
             return $message;
         } else {
-            throw new WebhookReadErrorException('Não era um Card Ganho ou não havia venda na proposta do webhook Id '.$webhook->webhookId.'');
+            throw new WebhookReadErrorException('Não era um Card Ganho ou não havia venda na proposta do webhook Id '.$webhook->webhookId.'',1009);
         }                
     }
     //CRIA PEDIDO NO OMIE
