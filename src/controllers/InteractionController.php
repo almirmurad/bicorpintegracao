@@ -37,9 +37,8 @@ class InteractionController extends Controller{
 
         $apiKey = $this->apiKey;
         $baseApi = $this->baseApi;
-        $method = 'POST';
 
-        $response = InteractionHandler::createPloomesIteraction($json, $baseApi, $method, $apiKey);
+        $response = InteractionHandler::createPloomesIteraction($json, $baseApi, $apiKey);
 
         if ($response) {
             echo"<pre>";

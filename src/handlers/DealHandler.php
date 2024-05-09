@@ -203,7 +203,7 @@ class DealHandler
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
             (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP! WebhookId: '.$webhook->webhookId.'',1007);
             //inclui o pedido no omie
-            $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes);
+            $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes);
 
             if ($incluiPedidoOmie) {
 
@@ -229,7 +229,7 @@ class DealHandler
         }                
     }
     //CRIA PEDIDO NO OMIE
-    public static function criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $finishDate, $lastOrderId, $numPedido, $productsOrder, $ncc, $codVendedorOmie, $notes)
+    public static function criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $finishDate, $lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes)
     {   
         // echo'<pre>';
         // $prd = json_encode($productsOrder);
@@ -245,7 +245,7 @@ class DealHandler
                         'codigo_cliente' => $idClienteOmie, //Id do cliente do Omie retornado da função que busca no omie pelo cnpj
                         'data_previsao' => DiverseFunctions::convertDate($finishDate), //obrigatorio
                         'codigo_pedido_integracao' =>$lastOrderId, //codigo que busca pela integração específica
-                        'numero_pedido' => $numPedido,
+                        'numero_pedido' => $lastOrderId,
                         'origem_pedido' => 'API',
                         'etapa' => '10', //obrigatorio
                         //'qtde_parcela'=>2

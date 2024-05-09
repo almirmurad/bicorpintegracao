@@ -523,3 +523,12 @@ array(3) {
   string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 5016"
 }
 
+array(3) {
+  ["webhookMessage"]=>
+  string(64) "Novo webhook criado id = Id do cadastro do webhook no banco: 150"
+  ["dealMessage"]=>
+  string(32) "Id do Deal no Banco de Dados: 43"
+  ["returnPedidoOmie"]=>
+  string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 1405"
+}
+
