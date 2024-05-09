@@ -4,15 +4,12 @@ namespace src\handlers;
 
 use src\exceptions\DealNaoEncontradoBDException;
 use src\exceptions\EstagiodavendaNaoAlteradoException;
-use src\exceptions\FaturamentoNaoCadastrado;
 use src\exceptions\FaturamentoNaoCadastradoException;
-use src\exceptions\InteraçãoNãoAdicionadaException;
+use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\NotaFiscalNaoEncontradaException;
 use src\exceptions\PedidoNaoEncontradoOmieException;
 use src\exceptions\WebhookReadErrorException;
 use src\models\Deal;
-use src\models\Webhook;
-use src\functions\DiverseFunctions;
 use src\models\Invoicing;
 
 class InvoicingHandler
@@ -57,7 +54,7 @@ class InvoicingHandler
             }
 
         //consulta a nota fiscal no omie para retornar o numero da nota.            
-        ($nfe = Self::consultaNotaOmie($invoicing->appKey, $appSecret, $invoicing->idPedido))? $invoicing->nNF = $nfe['ide']['nNF'] : throw new NotaFiscalNaoEncontradaException('Nota fiscal não encontrada para o pedido: '.$invoicing->idPedido, 1021);
+        ($nfe = Self::consultaNotaOmie($invoicing->appKey, $appSecret, $invoicing->idPedido))? $invoicing->nNF = intval($nfe['ide']['nNF']) : throw new NotaFiscalNaoEncontradaException('Nota fiscal não encontrada para o pedido: '.$invoicing->idPedido, 1021);
         //salva o faturamento no banco
         ($idInvoicing = Self::saveInvoicing($invoicing))? $message['invoicingId'] = 'Novo faturamento armazenado no banco id: '.$idInvoicing : throw new FaturamentoNaoCadastradoException('NOTA FISCAL NÚMERO: '.$invoicing->nNF.'DUPLICADA NÃO CADASTRADA NA BASE DE DADOS!',1022);
         $message['InvoicingMessage'] = 'Nova Nota Faturada. NF numero: '.$invoicing->nNF.', pedido número: '.$invoicing->numeroPedido;
@@ -75,11 +72,12 @@ class InvoicingHandler
             ]
         :throw new DealNaoEncontradoBDException('Dados do pedido não encontrado na base de dados, não foi possível enviar a mensagem ao ploomes',1024) ;
         //Cria interação no card específico                 
-        ($interaction = InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))? $message['addInteraction'] = 'Interação adicionada no card '.$deal['dealId'] : throw new InteraçãoNãoAdicionadaException('Não foi possível adicionar a interação no card'.$deal['dealId'],1025);
+        (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))? $message['addInteraction'] = 'Interação adicionada no card '.$deal['dealId'] : throw new InteracaoNaoAdicionadaException('Não foi possível adicionar a interação no card'.$deal['dealId'],1025);
         //muda a etapa da venda específica para NF-Emitida stage Id 40042597
         $stage = ['StageId'=> 40042597];
         $method = 'patch';
         (self::alterStageOrder(json_encode($stage), $idPedidoIntegracao, $baseApi, $method, $apiKey))? $message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda',1026);
+        return $message;
         
     }
     //CONSULTA PEDIDO NO OMIE

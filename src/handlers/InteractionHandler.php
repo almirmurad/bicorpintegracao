@@ -26,10 +26,12 @@ class InteractionHandler{
         ));
 
         $response = curl_exec($curl);
-
+        $decoded = json_decode($response, true);
+        $idIntegration = $decoded['value']['Id'];
         curl_close($curl);
+        return (!isset($idIntegration))? false : true;
        
-        return $response;
+        
     }
 
 }

@@ -2,8 +2,13 @@
 namespace src\controllers;
 
 use \core\Controller;
-use Exception;
 use src\exceptions\WebhookReadErrorException;
+use src\exceptions\DealNaoEncontradoBDException;
+use src\exceptions\EstagiodavendaNaoAlteradoException;
+use src\exceptions\FaturamentoNaoCadastradoException;
+use src\exceptions\InteracaoNaoAdicionadaException;
+use src\exceptions\NotaFiscalNaoEncontradaException;
+use src\exceptions\PedidoNaoEncontradoOmieException;
 use src\handlers\LoginHandler;
 use src\handlers\InvoicingHandler;
 use src\models\Deal;
@@ -74,46 +79,38 @@ class InvoicingController extends Controller {
                 echo '<pre>';
                 print $e->getMessage();
             }
-        // }catch(WebhookReadErrorException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();           
-        // }
-        // catch(BaseFaturamentoInexistenteException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // catch(CnpjClienteInexistenteException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // catch(PedidoInexistenteException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // catch(ProdutoInexistenteException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // catch(ClienteInexistenteException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // catch(VendedorInexistenteException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // catch(PedidoRejeitadoException $e){
-        //     echo '<pre>';
-        //     print $e->getMessage();
-        // }
-        // finally{
-        //     ob_start();
-        //     var_dump($e->getMessage());
-        //     $input = ob_get_contents();
-        //     ob_end_clean();
-        //     file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-        //     exit; 
-        // }
+        catch(DealNaoEncontradoBDException $e){
+            echo '<pre>';
+            print $e->getMessage();           
+        }
+        catch(EstagiodavendaNaoAlteradoException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(FaturamentoNaoCadastradoException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(InteracaoNaoAdicionadaException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(NotaFiscalNaoEncontradaException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(PedidoNaoEncontradoOmieException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        finally{
+            ob_start();
+            var_dump($e->getMessage());
+            $input = ob_get_contents();
+            ob_end_clean();
+            file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+            exit; 
+        }
         
     }
 

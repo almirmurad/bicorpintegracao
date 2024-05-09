@@ -6,6 +6,7 @@ use src\exceptions\BaseFaturamentoInexistenteException;
 use src\exceptions\ClienteInexistenteException;
 use src\exceptions\CnpjClienteInexistenteException;
 use src\exceptions\EmailVendedorNaoExistenteException;
+use src\exceptions\EstagiodavendaNaoAlteradoException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
@@ -220,7 +221,7 @@ class DealHandler
                     'Title' => 'Pedido Criado'
                 ];
                 //cria uma interação no card
-                InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey);
+                (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda',1026);
             }            
             //IntegraHandler::montaTable($deal, $prop);//monta a tabela html pra retornar a view ("legado").
             return $message;
