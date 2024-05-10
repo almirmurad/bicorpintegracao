@@ -532,3 +532,17 @@ array(3) {
   string(65) "Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: 1405"
 }
 
+string(97) "Dados do pedido não encontrado na base de dados, não foi possível enviar a mensagem ao ploomes"
+
+string(68) "NOTA FISCAL NÚMERO: 4550DUPLICADA NÃO CADASTRADA NA BASE DE DADOS!"
+
+string(68) "NOTA FISCAL NÚMERO: 4550DUPLICADA NÃO CADASTRADA NA BASE DE DADOS!"
+
+string(62) "NOTA FISCAL NÚMERO: 4550 JÁ FOI CADASTRADA NA BASE DE DADOS!"
+
+string(97) "Dados do pedido não encontrado na base de dados, não foi possível enviar a mensagem ao ploomes"
+
+string(86) "NOTA FISCAL NÚMERO 4549 JÁ FOI CADASTRADA NA BASE DE DADOS E NÃO PODE SER REPITIDA!"
+
+string(86) "NOTA FISCAL NÚMERO 4549 JÁ FOI CADASTRADA NA BASE DE DADOS E NÃO PODE SER REPITIDA!"
+

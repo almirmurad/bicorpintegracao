@@ -2,6 +2,7 @@
 
 namespace src\handlers;
 
+use PDOException;
 use src\exceptions\DealNaoEncontradoBDException;
 use src\exceptions\EstagiodavendaNaoAlteradoException;
 use src\exceptions\FaturamentoNaoCadastradoException;
@@ -17,19 +18,21 @@ class InvoicingHandler
     //LÊ O WEBHOOK E COM A NOTA FATURADA
     public static function readInvoiceHook($json, $baseApi, $method, $apiKey)
     {   
+        // Array de retorno
+        $message = [];
+        //decodifica o json em array
+        $decoded = json_decode($json, true);
+        //verifica se tem informações no array e se a nota está faturada (etapa 60)
         if(empty($decoded || $decoded['event']['etapa'] != 60)){
             throw new WebhookReadErrorException('Não foi possível ler o Webhook ou não existe nota fiscal emitida!',1020);
         }
-        $message = [];
-        $decoded = json_decode($json, true);
-       
         //infos do webhook
         $invoicing = new Invoicing();
-        $invoicing->authorId = $decoded['author']['userId'];//nome de quem faturou
+        $invoicing->authorId = $decoded['author']['userId'];//Id de quem faturou
         $invoicing->authorName = $decoded['author']['name'];//nome de quem faturou
         $invoicing->authorEmail = $decoded['author']['email'];//email de quem faturou
-        $invoicing->appKey = $decoded['appKey'];//id do app que faturoue
-        $invoicing->etapa = $decoded['event']['etapa']; // etapa do processo 
+        $invoicing->appKey = $decoded['appKey'];//id do app que faturou (base de faturamento)
+        $invoicing->etapa = $decoded['event']['etapa']; // etapa do processo 60 = faturado
         $invoicing->etapaDescr = $decoded['event']['etapaDescr']; // descrição da etapa 
         $invoicing->dataFaturado = $decoded['event']['dataFaturado']; // data do faturamento
         $invoicing->horaFaturado = $decoded['event']['horaFaturado']; // hora do faturamento
@@ -37,9 +40,8 @@ class InvoicingHandler
         $invoicing->idPedido = $decoded['event']['idPedido']; // Id do Pedido Omie
         $invoicing->numeroPedido = $decoded['event']['numeroPedido']; // Numero do pedido
         $invoicing->valorPedido = $decoded['event']['valorPedido']; // Valor Faturado
-        
+        //pega a chave secreta para a base de faturamento vinda no faturamento
         switch($invoicing->appKey){
-            
             case 2337978328686:               
                 $appSecret = $_ENV['SECRETS_MHL'];
                 break;
@@ -52,15 +54,20 @@ class InvoicingHandler
                 $appSecret = $_ENV['SECRETS_MSC'];
                 break;
             }
-
         //consulta a nota fiscal no omie para retornar o numero da nota.            
         ($nfe = Self::consultaNotaOmie($invoicing->appKey, $appSecret, $invoicing->idPedido))? $invoicing->nNF = intval($nfe['ide']['nNF']) : throw new NotaFiscalNaoEncontradaException('Nota fiscal não encontrada para o pedido: '.$invoicing->idPedido, 1021);
-        //salva o faturamento no banco
-        ($idInvoicing = Self::saveInvoicing($invoicing))? $message['invoicingId'] = 'Novo faturamento armazenado no banco id: '.$idInvoicing : throw new FaturamentoNaoCadastradoException('NOTA FISCAL NÚMERO: '.$invoicing->nNF.'DUPLICADA NÃO CADASTRADA NA BASE DE DADOS!',1022);
+        try{
+            //salva o faturamento no banco
+            $idInvoicing = Self::saveInvoicing($invoicing);
+        }catch(PDOException $e){
+            //RETORNA ERRO DO BANCO CASO DE PROBLEMA NA INSERÇÃO
+            echo $e->getMessage();
+        }
+        (!empty($idInvoicing))? $message['invoicingId'] = 'Novo faturamento armazenado no banco id: '.$idInvoicing : throw new FaturamentoNaoCadastradoException('NOTA FISCAL NÚMERO '.$invoicing->nNF.' JÁ FOI CADASTRADA NA BASE DE DADOS E NÃO PODE SER REPITIDA!',1022);
         $message['InvoicingMessage'] = 'Nova Nota Faturada. NF numero: '.$invoicing->nNF.', pedido número: '.$invoicing->numeroPedido;
         // busca o pedido através id do pedido no omie para pegar o número do Deal
         ($pedidoOmie = Self::consultaPedidoOmie($invoicing->appKey, $appSecret, $invoicing->idPedido))?$idPedidoIntegracao = $pedidoOmie['pedido_venda_produto']['cabecalho']['codigo_pedido_integracao']: throw new PedidoNaoEncontradoOmieException('Pedido '.$invoicing->idPedido.' não encontrado no Omie ERP',1023);
-        //$idPedidoIntegracao= 402303406;
+        $idPedidoIntegracao= 402303406;
         // Busca o Deal salvo no banco com o número do pedido de integração para pegar os dados e montar o cabeçalho da mensagem
         ($deal = Deal::select()->where('last_order_id', $idPedidoIntegracao)->one())? 
             $msg = [
@@ -70,7 +77,7 @@ class InvoicingHandler
                 'Title'=> 'Nota Fiscal emitida',
                 'Content'=> 'Pedido faturado no Omie. NF número: '. $invoicing->nNF,
             ]
-        :throw new DealNaoEncontradoBDException('Dados do pedido não encontrado na base de dados, não foi possível enviar a mensagem ao ploomes',1024) ;
+        :throw new DealNaoEncontradoBDException('Dados do pedido não encontrado na base de dados, não foi possível enviar a mensagem ao ploomes',1024);
         //Cria interação no card específico                 
         (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))? $message['addInteraction'] = 'Interação adicionada no card '.$deal['dealId'] : throw new InteracaoNaoAdicionadaException('Não foi possível adicionar a interação no card'.$deal['dealId'],1025);
         //muda a etapa da venda específica para NF-Emitida stage Id 40042597
@@ -120,7 +127,6 @@ class InvoicingHandler
         
         return json_decode($response, true);
     }
-
     //CONSULTA NOTA FISCAL NO OMIE
     public static function consultaNotaOmie($appKey, $appSecret, $orderId )
     {   
@@ -186,7 +192,6 @@ class InvoicingHandler
         }
         return $id;
     }
-
     //ALTERA O ESTÁGIO DA VENDA NO PLOOMES
     public static function alterStageOrder($stage, $orderId, $baseApi, $method, $apiKey)
     {

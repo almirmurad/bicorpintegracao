@@ -7,6 +7,7 @@ use src\exceptions\ClienteInexistenteException;
 use src\exceptions\CnpjClienteInexistenteException;
 use src\exceptions\EmailVendedorNaoExistenteException;
 use src\exceptions\EstagiodavendaNaoAlteradoException;
+use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
@@ -23,10 +24,6 @@ class DealHandler
     {   
         $message = [];
         $decoded = json_decode($json, true);
-        // echo"<pre>";
-        // print_r($decoded);
-        // exit;
-
         //infos do webhook
         $webhook = new Webhook();
         $webhook->action = $decoded['Action']; // Ação 
@@ -37,19 +34,18 @@ class DealHandler
         $webhook->webhookId = $decoded['WebhookId']; // Id do Webhook
         $webhook->webhookCreatorId = $decoded['WebhookCreatorId']; // Id do usuário que criou o webhook
         
-        //salva o hook no banco
-        $idWebhook = Self::saveWebhook($webhook);
-        $message['webhookMessage'] ='Novo webhook criado id = '.$idWebhook;
-        
-        $prop = [];
-        foreach ($decoded['New']['OtherProperties'] as $key => $op) {
-            $prop[$key] = $op;
-        }
-
-        if (isset($decoded['Action']) && $decoded['Action'] == "Win" && !empty($decoded['New']['LastOrderId'])) {
-
+        if (isset($decoded['Action']) && $decoded['Action'] == "Win" && !empty($decoded['New']['LastOrderId'])) 
+        {    
+            //salva o hook no banco
+            $idWebhook = Self::saveWebhook($webhook);
+            $message['webhookMessage'] ='Novo webhook criado id = '.$idWebhook;
+            //other Properties
+            $prop = [];
+            foreach ($decoded['New']['OtherProperties'] as $key => $op) {
+                $prop[$key] = $op;
+            }
+            //cria objeto deal
             $deal = new Deal();
-            
             //infos do Deal new
             $deal->attachmentsItems = $decoded['New']['AttachmentsItems'];
             $deal->collaboratingUsers = (isset($decoded['New']['CollaboratingUsers'][0]['UserId'])) ? $decoded['New']['CollaboratingUsers'][0]['UserId'] : 'Não definido'; // Usuários colaboradores
@@ -57,7 +53,6 @@ class DealHandler
             $deal->contactsProducts = $decoded['New']['ContactsProducts']; // Produtos de cliente
             // Base de Faturamento
             $deal->baseFaturamento = (isset($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']) && !empty($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'])) ? $prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'] : throw new BaseFaturamentoInexistenteException('Base de faturamento inexistente para o webhook Id: '.$webhook->webhookId.' ',1001);
-
             // Fim de $prop Outras Propriedades //
             $deal->products = $decoded['New']['Products']; //Produtos relacionados
             $products = $deal->products; //Produtos relacionados
@@ -150,30 +145,15 @@ class DealHandler
                     $appKey = $_ENV['APPK_MHL'];
                     break;
             }
-            
             //busca a venda no ploomes
-             (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes webhook id: '.$webhook->webhookId.'',1004 );
-
-            //  echo 'chegou em order<br>';
-            //  print_r($arrayRequestOrder);
-             
-            //  exit;
-
+            (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes webhook id: '.$webhook->webhookId.'',1004 );
             //array de produtos da venda
             $productsRequestOrder = $arrayRequestOrder[0]->Products;
-            // echo 'Products request<br>';
-            //  print_r($productsRequestOrder[0]);
-             
-            //  exit;
-
-
+            
             $det = [];
            
             $productsOrder = [];
             foreach ($productsRequestOrder as $prdItem) { 
-            // echo'<pre>';
-            // print_r($prdItem);
-            // exit;
                 
                 $det['ide'] = [];
                 $det['ide']['codigo_item_integracao'] = $prdItem->Id;
@@ -189,13 +169,8 @@ class DealHandler
 
                 $productsOrder[] = $det;
             }
-               
             //busca Observação da Proposta (Quote)
-            $notes = strip_tags(Self::requestQuote($deal->lastQuoteId, $baseApi, $method, $apiKey));
-            // echo'<pre>';
-            // print_r($notes);
-            // exit;
-            
+            ($notes = strip_tags(Self::requestQuote($deal->lastQuoteId, $baseApi, $method, $apiKey)))?$notes : $notes='Venda à Vista!';
             //salva um deal no banco
             $dealCreatedId = Self::saveDeal($deal);   
             $message['dealMessage'] ='Id do Deal no Banco de Dados: '.$dealCreatedId;     
@@ -205,15 +180,21 @@ class DealHandler
             (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP! WebhookId: '.$webhook->webhookId.'',1007);
             //inclui o pedido no omie
             $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes);
-
+            //verifica se criou o pedido no omie
             if ($incluiPedidoOmie) {
-
+                //se no pedido existi faulstring, então deu erro na inclusão
                 if(isset($incluiPedidoOmie->faultstring)){
                     throw new PedidoRejeitadoException($incluiPedidoOmie->faultstring,1008);
                 }
-                
                 $message['returnPedidoOmie'] ='Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: '.intval($incluiPedidoOmie->numero_pedido);
-            
+                //inclui o id do pedido no omie na tabela deal
+                if($incluiPedidoOmie->codigo_pedido){
+                    Deal::Update()->set(
+                    'omie_order_id', $incluiPedidoOmie->codigo_pedido,
+                    )->where('last_order_id', $deal->lastOrderId)
+                    ->execute();
+                }
+                //monta a mensadem para atualizar o card do ploomes
                 $msg=[
                     'ContactId' => $deal->contactId,
                     'DealId' => $deal->id,
@@ -221,9 +202,9 @@ class DealHandler
                     'Title' => 'Pedido Criado'
                 ];
                 //cria uma interação no card
-                (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda',1026);
+                (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['interactionMessage'] = 'Estágio da venda alterado com sucesso': throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem na venda',1010);
             }            
-            //IntegraHandler::montaTable($deal, $prop);//monta a tabela html pra retornar a view ("legado").
+            
             return $message;
         } else {
             throw new WebhookReadErrorException('Não era um Card Ganho ou não havia venda na proposta do webhook Id '.$webhook->webhookId.'',1009);
@@ -432,11 +413,9 @@ class DealHandler
         curl_close($curl);
         $notes = json_decode($response, true);
         $notes = $notes['value'][0]['Notes'];
-        // echo'<pre>';
-        // print_r($notes['value'][0]['Notes']);
-        // exit;
+        
+        return (!empty($notes['value']))? $notes : false;
 
-        return $notes;
     }
     //ENCONTRA O CNPJ DO CLIENTE NO PLOOMES
     public static function contactCnpj($contactId, $baseApi, $method,  $apiKey)
@@ -472,40 +451,40 @@ class DealHandler
 
         return $response;
     }
-     //ENCONTRA O EMAIL DO VENDEDOR NO PLOOMES
-     public static function ownerMail($ownerId, $baseApi, $method,  $apiKey)
-     {
- 
-         $headers = [
-             'User-Key:' . $apiKey,
-             'Content-Type: application/json',
-         ];
- 
-         $curl = curl_init();
- 
-         curl_setopt_array($curl, array(
-             CURLOPT_URL => $baseApi . 'Users?$filter=Id+eq+' . $ownerId . '',
-             CURLOPT_RETURNTRANSFER => true,
-             CURLOPT_ENCODING => '',
-             CURLOPT_MAXREDIRS => 10,
-             CURLOPT_TIMEOUT => 0,
-             CURLOPT_FOLLOWLOCATION => true,
-             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-             CURLOPT_CUSTOMREQUEST => strtoupper($method),
-             CURLOPT_HTTPHEADER => $headers
- 
-         ));
- 
-         $responseCnpj = curl_exec($curl);
- 
-         curl_close($curl);
- 
-         $responseCnpj = json_decode($responseCnpj);
- 
-         $response = $responseCnpj->value[0]->Email;
-         
-         return $response;
-     }
+    //ENCONTRA O EMAIL DO VENDEDOR NO PLOOMES
+    public static function ownerMail($ownerId, $baseApi, $method,  $apiKey)
+    {
+
+        $headers = [
+            'User-Key:' . $apiKey,
+            'Content-Type: application/json',
+        ];
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $baseApi . 'Users?$filter=Id+eq+' . $ownerId . '',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => strtoupper($method),
+            CURLOPT_HTTPHEADER => $headers
+
+        ));
+
+        $responseCnpj = curl_exec($curl);
+
+        curl_close($curl);
+
+        $responseCnpj = json_decode($responseCnpj);
+
+        $response = $responseCnpj->value[0]->Email;
+        
+        return $response;
+    }
     //MONTA TABELA EM HTML PRA ENVIAR A VIEW
     public static function montaTable($deal, $prop)
     {
