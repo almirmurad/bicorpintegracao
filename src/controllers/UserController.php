@@ -55,7 +55,6 @@ class UserController extends Controller
     }
 
     public function addUserAction(){
-        
 
         $name   = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_SPECIAL_CHARS);
         $mail   = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
@@ -120,6 +119,10 @@ class UserController extends Controller
                             mkdir($caminho, 0777);
                         }
 
+                        $origem = "assets/img/avatar.png";
+                        $destino = "$caminho/avatar.png";
+                        copy($origem,$destino);
+
                         move_uploaded_file($fotosNames[0]['tmp_name'], $caminho.'/'.$newNameAvatar);
                         
                         $this->redirect('/users');
@@ -138,6 +141,82 @@ class UserController extends Controller
             $_SESSION['flash'] = "Preencha todos os campos";
             $this->redirect('/addUser');
         }
+    }
+
+    public function editUser($id){
+
+        $user = User::select()->where('id',$id)->one();
+
+        $flash = '';
+        if (!empty($_SESSION['flash'])) {
+            $flash = $_SESSION['flash'];
+            $_SESSION['flash'] = '';
+        }
+        $this->render('gerenciador.pages.editUser', [
+            'pagina' => 'Alterar dados do usuario: ',
+            'loggedUser' => $this->loggedUser,
+            'user' => $user,
+            'flash' => $flash
+        ]); 
+    }
+
+    public function editUserAction($id){
+        $id = $id['id'];
+        $name   = filter_input(INPUT_POST,'name', FILTER_SANITIZE_ADD_SLASHES);
+        $mail   = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
+        $pass   = filter_input(INPUT_POST, 'pass');
+        $rPass  = filter_input(INPUT_POST, 'rpass');
+        $active = filter_input(INPUT_POST, 'active', FILTER_VALIDATE_INT);
+        $type = filter_input(INPUT_POST, 'type', FILTER_VALIDATE_INT);
+        ($type) == 1 ? $id_permission = 1 : $id_permission = 2;
+
+        if($name && $mail && $pass && $rPass && $active && $type && $id_permission ){
+            
+            if($pass !== $rPass){
+                $_SESSION['flash'] = "Senha e Repite de senha não conferem!";
+                $this->redirect('/user'.'/'.$id.'/editUser');
+            }
+
+            //UPLOAD DA FOTO DE CAPA
+            $fotosNames = [];
+            if(!empty($_FILES['avatar']['tmp_name'])){
+                
+                foreach($_FILES as $img){
+                    if(isset ($img['type'])){
+                        if(in_array($img['type'],['image/jpeg', 'image/jpg', 'image/png'])){
+                            $fotosNames[] = $img;
+                        }
+                    } 
+                }
+                
+                //verifica se existe a pasta imagens específica para pacotes 
+                $newNameAvatar = md5(time().rand(0,999).rand(0,999)).'.jpg';
+                $caminho = "assets/uploads/images/users/$id/avatars";
+
+                move_uploaded_file($fotosNames[0]['tmp_name'], $caminho.'/'.$newNameAvatar);
+
+            }else{
+                $origem = "assets/img/avatar.png";
+                $destino = "assets/uploads/images/users/$id/avatars/avatar.png";
+                copy($origem,$destino);
+                $newNameAvatar = 'avatar.png';
+            }
+
+            $alterado = UserHandler::editUser($name, $mail, $pass, $type, $id_permission, $newNameAvatar, $active, $id );
+
+            if (!$alterado) {
+                $_SESSION['flash'] = "Erro ao alterar usuario!";
+                $this->redirect('/user'.'/'.$id.'/editUser');
+            }
+            $_SESSION['flash'] = "Usuario alterado com sucesso!";
+            $this->redirect('/user'.'/'.$id.'/editUser');
+
+        }else{
+
+            $_SESSION['flash'] = "Preencha todos os campos obrigatórios!";
+                $this->redirect('/user'.'/'.$id.'/editUser');
+        }
+
     }
 
     public function delUser($id) {

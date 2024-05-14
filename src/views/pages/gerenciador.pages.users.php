@@ -53,7 +53,7 @@
                             <td><?=$data->active;?></td>
                             <td style="display: flex;">
                                 <a class='btn btn-danger btn-small' href="<?=$base;?>/delUser/<?=$data->id;?>">Excluir</a>
-                                <!-- <a class='btn btn-success btn-small' href="<?=$base;?>/editHook/<?=$data->id;?>">Editar</a> -->
+                                <a class='btn btn-success btn-small' href="<?=$base;?>/user/<?=$data->id;?>/editUser">Editar</a>
                             </td>
                             </tr>
                         <?php endforeach?>

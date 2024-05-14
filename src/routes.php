@@ -31,4 +31,8 @@ $router->get('/addUser','UserController@addUser');
 $router->post('/addUser','UserController@addUserAction');
 $router->get('/delUser/{id}', 'UserController@delUser');
 
+$router->get('/user/{id}/editUser', 'UserController@editUser');
+// $router->get('/editUser/{id}', 'UserController@editUser');
+$router->post('/user/{id}/editUser','UserController@editUserAction');
+
 

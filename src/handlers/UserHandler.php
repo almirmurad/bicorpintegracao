@@ -78,17 +78,17 @@ class UserHandler {
         return $id;
     }
 
-    public static function editUser($name, $mail, $pass, $phone, $type, $id_permission, $avatar, $id){
+    public static function editUser($name, $mail, $pass, $type, $id_permission, $avatar, $active, $id){
         $hash = password_hash($pass, PASSWORD_DEFAULT);
 
         User::update()
                 ->set('name', $name)
                 ->set('email', $mail)
                 ->set('password', $hash)
-                ->set('phone', $phone)
-                ->set('avatar', $avatar)
-                ->set('type_user', $type)
+                ->set('type', $type)
                 ->set('id_permission', $id_permission)
+                ->set('avatar', $avatar)
+                ->set('active', $active)
                 // ->set('created_at', date('Y-m-d H:i:s'))
                 ->where('id', $id)
                 ->execute();
