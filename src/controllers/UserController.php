@@ -18,6 +18,8 @@ class UserController extends Controller
             $this->loggedUser = LoginHandler::checkLogin();
             if ($this->loggedUser === false) {
                 $this->redirect('/login');
+            }elseif(!in_array('users_view', $this->loggedUser->permission)){
+                $this->redirect('/',['flash'=>$_SESSION['flash'] = "Usuário sem permissão para acessar esta area!"]);
             }
         }
     }

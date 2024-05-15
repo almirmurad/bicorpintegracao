@@ -2,7 +2,7 @@
 namespace src\handlers;
 
 use src\models\User;
-use src\handlers\PermissionsHandler;
+use src\handlers\PermissionHandler;
 
 class LoginHandler {
 
@@ -21,17 +21,16 @@ class LoginHandler {
                 $loggedUser->avatar = $data['avatar'];
                 $loggedUser->id_permission = $data['id_permission'];
                 $loggedUser->level = $data['type'];
-
                 //buscar lista de permissões
-                //$loggedUser->list_permission = PermissionsHandler::getPermissions($data['id_permission']);
-                
+                $loggedUser->permission = PermissionHandler::getPermissions($data['id_permission']);
+
                 switch($loggedUser->level){
                 case 1: 
                     $loggedUser->level = "Administrador";
                     break;
 
                 case 2: 
-                    $loggedUser->level = "Redator";
+                    $loggedUser->level = "Normal";
                     break;
                 }
                 

@@ -15,11 +15,15 @@ class IntegracaoController extends Controller
 
     public function __construct()
     {
+        
         if($_SERVER['REQUEST_METHOD'] !== "POST"){
             $this->loggedUser = LoginHandler::checkLogin();
             if ($this->loggedUser === false) {
                 $this->redirect('/login');
+            }elseif(!in_array('register_integration', $this->loggedUser->permission)){
+                $this->redirect('/',['flash'=>$_SESSION['flash'] = "Usuário sem permissão para acessar esta area!"]);
             }
+
         }
         $this->apiKey = $_ENV['API_KEY'];
         $this->baseApi = $_ENV['BASE_API'];

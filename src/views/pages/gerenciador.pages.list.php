@@ -2,7 +2,7 @@
     <?php $render('gerenciador.partials.head');?>
     <?php $render('gerenciador.partials.header',['loggedUser'=>$loggedUser]);?>
     <main>
-    <?php $render('gerenciador.partials.aside');?>
+    <?php $render('gerenciador.partials.aside',['loggedUser'=>$loggedUser]);?>
     
         <section>
             <div class="title">
