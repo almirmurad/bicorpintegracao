@@ -27,6 +27,12 @@ $router->get('/configs', 'ConfigController@index');
 $router->post('/define', 'ConfigController@defineConfig');
 //permissões
 $router->get('/permissions', 'PermissionController@index');
+$router->get('/delGroupPermission/{id}', 'PermissionController@delGroupPermission');
+$router->get('/addPermissionGroup', 'PermissionController@addPermissionGroup');
+$router->post('/addPermissionGroupAction', 'PermissionController@addPermissionGroupAction');
+
+$router->get('/editPermissionGroup/{id}', 'PermissionController@editPermissionGroup');
+$router->post('/editPermissionGroupAction/{id}', 'PermissionController@editPermissionGroupAction');
 
 //Users
 $router->get('/users', 'UserController@listUsers');

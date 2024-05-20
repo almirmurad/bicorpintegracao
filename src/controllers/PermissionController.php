@@ -24,7 +24,7 @@ class PermissionController extends Controller {
     public function index() {
 
         $p = PermissionHandler::getAllGroups();
-        $data['list'] = $p;
+      
         $flash = '';
         if (!empty($_SESSION['flash'])) {
             $flash = $_SESSION['flash'];
@@ -35,9 +35,105 @@ class PermissionController extends Controller {
             'pagina' => 'Permissões',
             'loggedUser'=>$this->loggedUser,
             'flash'=>$flash,
-            'list'=> array()
+            'list'=> $p
         ];
         $this->render('gerenciador.pages.permissions', $data);
+    }
+
+    public function delGroupPermission($idGroup){
+
+
+        if(PermissionHandler::delGroupPermission($idGroup['id'])){
+            $this->redirect('/permissions',['flash'=>$_SESSION['flash'] = "Grupo de permissões deletado com suceso!"]);
+        }else{
+            $this->redirect('/permissions',['flash'=>$_SESSION['flash'] = "Não foi possível excluir o grupo de permissões, haviam usuários incluidos nele!"]);
+        }
+
+    }
+
+    public function addPermissionGroup(){
+
+        $p = PermissionHandler::getAllGroups();
+        $items = PermissionHandler::getAllItems();
+      
+        $flash = '';
+        if (!empty($_SESSION['flash'])) {
+            $flash = $_SESSION['flash'];
+            $_SESSION['flash'] = '';
+        }
+    
+        $data = [
+            'pagina' => 'Adicionar Grupos de Permissões',
+            'loggedUser'=>$this->loggedUser,
+            'flash'=>$flash,
+            'list'=> $p,
+            'items'=> $items,
+        ];
+        $this->render('gerenciador.pages.addPermissionGroup', $data);
+    }
+
+    public function addPermissionGroupAction(){
+
+        $args = array(
+            'name'=>FILTER_SANITIZE_SPECIAL_CHARS,
+            'itemPermission'=>array('filter'=>FILTER_VALIDATE_INT,
+                                    'flags'  => FILTER_REQUIRE_ARRAY,
+                                     ));
+       
+        $data  = filter_input_array(INPUT_POST, $args);
+
+        if(PermissionHandler::insertNewPermissionGroup($data)){
+            $this->redirect('/permissions',['flash'=>$_SESSION['flash'] = "Grupo de permissões inserido com suceso!"]);
+        }
+        $this->redirect('/addPermissionGroup',['flash'=>$_SESSION['flash'] = "Erro ao adicionar grupo de permissões!"]);
+
+    }
+
+    public function editPermissionGroup($idGroup){
+
+        // print_r($idGroup);
+        // exit;
+        $name = PermissionHandler::getPermissionGroupName($idGroup);
+        $items = PermissionHandler::getAllItems();
+        $permissionLinks = PermissionHandler::getPermissions($idGroup);
+      
+        $flash = '';
+        if (!empty($_SESSION['flash'])) {
+            $flash = $_SESSION['flash'];
+            $_SESSION['flash'] = '';
+        }
+    
+        $data = [
+            'pagina' => 'Editar Grupos de Permissões',
+            'loggedUser'=>$this->loggedUser,
+            'flash'=>$flash,
+            'items'=>$items,
+            'name'=>$name,
+            'permissionLinks'=> $permissionLinks,
+            'idGroup'=>$idGroup['id']
+        ];
+        $this->render('gerenciador.pages.editPermissionGroup', $data);
+        
+    }
+
+    public function editPermissionGroupAction($idGroup){
+
+        $args = array(
+            'name'=>FILTER_SANITIZE_SPECIAL_CHARS,
+            'itemPermission'=>array('filter'=>FILTER_VALIDATE_INT,
+            'flags'  => FILTER_REQUIRE_ARRAY,
+        ),
+        );
+        
+        $data  = filter_input_array(INPUT_POST, $args);
+        $data['idGroup'] = $idGroup;
+
+
+        if(PermissionHandler::editPermissionGroup($data)){
+            $this->redirect('/permissions',['flash'=>$_SESSION['flash'] = "Grupo de permissões alterado com suceso!"]);
+        }
+        $this->redirect('/permissions',['flash'=>$_SESSION['flash'] = "Erro ao alterar grupo de Permissões!"]);
+
     }
 
 }

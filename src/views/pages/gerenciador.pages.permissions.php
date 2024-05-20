@@ -11,7 +11,7 @@
                 </div>
                 <div class="area-filtro">
                     <span>Integrações:</span>
-                    <a class="button" href=""><span>Filtrar</span><i class="material-icons btn">more_vert</i></a>
+                    <a class="button" href="<?=$base?>/addPermissionGroup"><span>Adicionar</span><i class="material-icons btn">more_vert</i></a>
                     <!-- <span>Canais:</span>
                     <a class="button" href=""><span>Filtrar</span><i class="material-icons btn">more_vert</i></a> -->
                 </div>
@@ -27,6 +27,29 @@
                             </h4>
                         </div>
                     <?php endif;?>
+
+                    <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Total Usuarios Ativos</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php 
+                        foreach($list as $data):?>
+                            <tr>
+                            <td><?=$data['namePermission'];?></td>
+                            <td><?=$data['totalUserPermission'];?></td>
+                            <td style="display: flex; justify-content:center;">
+                                <a class='btn btn-danger btn-small' href="<?=$base;?>/delGroupPermission/<?=$data['idPermission'];?>" <?=($data['totalUserPermission'] > 0 )? 'disabled':''?>>Excluir</a>
+                                <a class='btn btn-success btn-small' href="<?=$base;?>/editPermissionGroup/<?=$data['idPermission'];?>">Editar</a>
+                            </td>
+                            </tr>
+                        <?php endforeach?>
+                    </tbody>
+                </table>
                     
             </div>
         </section>
