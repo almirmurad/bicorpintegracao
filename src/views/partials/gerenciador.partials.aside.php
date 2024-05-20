@@ -18,7 +18,9 @@
             <?php if(in_array('users_view', $loggedUser->permission)):?>
             <li><a  href="<?=$base?>/users">Usuários</a></li>
             <?php endif?>
-
+            <?php if(in_array('permissions_view', $loggedUser->permission)):?>
+            <li><a  href="<?=$base?>/permissions">Permissões</a></li>
+            <?php endif?>
 
 
 

@@ -11,7 +11,7 @@ class HomeController extends Controller {
 
     public function __construct(){
         $this->loggedUser = LoginHandler::checkLogin();
-        if($this->loggedUser === false || !in_array('visualizar_dashboard', $this->loggedUser->permission )){
+        if($this->loggedUser === false || !in_array('dashboard_view', $this->loggedUser->permission )){
             $this->redirect('/login');
         }   
     }

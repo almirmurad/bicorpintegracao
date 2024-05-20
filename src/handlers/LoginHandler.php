@@ -5,7 +5,8 @@ use src\models\User;
 use src\handlers\PermissionHandler;
 
 class LoginHandler {
-
+    private $loggedUser;
+    
     public static function checkLogin(){
         if(!empty($_SESSION['token'])){
             $token = $_SESSION['token'];
@@ -39,6 +40,7 @@ class LoginHandler {
         }
         return false;
     }
+
 
     public static function verifyLogin($mail, $pass){
         $user = User::select()->where ('email', $mail)->one();

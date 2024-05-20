@@ -25,6 +25,9 @@ $router->post('/newInteraction', 'InteractionController@createInteraction');
 //Configurações
 $router->get('/configs', 'ConfigController@index');
 $router->post('/define', 'ConfigController@defineConfig');
+//permissões
+$router->get('/permissions', 'PermissionController@index');
+
 //Users
 $router->get('/users', 'UserController@listUsers');
 $router->get('/addUser','UserController@addUser');
