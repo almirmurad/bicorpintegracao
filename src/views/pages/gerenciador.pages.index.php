@@ -16,7 +16,7 @@
                 <a class="button" href=""><span>Filtrar</span><i class="material-icons btn">more_vert</i></a> -->
             </div>
         </div>
-                <div class="content column ">
+                <div class="content  ">
                 <?php if(!empty($flash)):?>
                         <div class="area-flash flex">
                             <i class="material-symbols-outlined">
@@ -28,14 +28,42 @@
                         </div>
                     <?php endif;?>
                 <!-- Início infoBox -->
-                <div class="info-Box">
+                <div class="info-Box" id="invoices">
                     <div class="title">
-                        <h2>Total de Integrações</h2>
+                        <h2>Notas Integradas</h2>
                     </div>
                     <div class="content-box">
                         <div class="content-info">
-                            <h3><?=$total;?></h3>
-                            <span>TMA: 0:00:00</span>
+                            <h3>?</h3>
+                            <span>Total de Notas Integradas</span>
+                            <a href="">Ir para monitoramento</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fim infoBox -->
+                <!-- Início infoBox -->
+                <div class="info-Box" id="deals">
+                    <div class="title">
+                        <h2>Propostas Integradas</h2>
+                    </div>
+                    <div class="content-box">
+                        <div class="content-info">
+                            <h3>?</h3>
+                            <span>Total de propostas integradas pelo sistema</span>
+                            <a href="">Ir para monitoramento</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fim infoBox -->
+                <!-- Início infoBox -->
+                <div class="info-Box" id="users">
+                    <div class="title">
+                        <h2>Usuários</h2>
+                    </div>
+                    <div class="content-box">
+                        <div class="content-info">
+                            <h3>?</h3>
+                            <span>Total de usuários do sistema</span>
                             <a href="">Ir para monitoramento</a>
                         </div>
                     </div>

@@ -92,6 +92,7 @@ header{
     display: flex;
     align-items: center;
     flex-direction: row-reverse;
+    
 }
 .img-user,
 .img-notifyer,
@@ -125,7 +126,7 @@ max-width: 100%;
     display: none;
     justify-content: space-around;
     align-items: center;
-    flex-direction: column;
+    flex-direction: column;    
 }
 .user-name,
 .user-notification a
@@ -380,6 +381,7 @@ section{
     border: 1px solid #172272;
     margin-bottom: -3px;
     background-color: #9ea8f52f;
+    transition: all ease-in-out 0.2s;
 }
 .checkBox:checked + label{
     color: #172272;

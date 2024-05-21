@@ -333,4 +333,14 @@ class InvoicingHandler
 
         return $cnpj;
     }
+
+    public static function totalInvoices(){
+        $total = [];
+        
+        $total['total'] = Invoicing::select()->count();
+
+        $total = json_encode($total);
+
+        return $total;
+    }
 }

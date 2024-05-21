@@ -4,6 +4,8 @@ use core\Router;
 $router = new Router();
 
 $router->get('/', 'HomeController@index');
+//Dashboard
+$router->get('/dashboard', 'DashboardController@index');
 
 //login-logout no painel
 $router->get('/login', 'LoginController@signin'); 
@@ -19,6 +21,8 @@ $router->get('/deals', 'DealController@index');
 $router->post('/winDeal', 'DealController@winDeal');
 //NFE
 $router->post('/invoiceIssue', 'InvoicingController@invoiceIssue');
+$router->get('/totalInvoices', 'InvoicingController@totalInvoices');
+
 //Interactions
 $router->get('/interactions', 'InteractionController@index');
 $router->post('/newInteraction', 'InteractionController@createInteraction');

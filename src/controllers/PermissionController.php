@@ -91,8 +91,6 @@ class PermissionController extends Controller {
 
     public function editPermissionGroup($idGroup){
 
-        // print_r($idGroup);
-        // exit;
         $name = PermissionHandler::getPermissionGroupName($idGroup);
         $items = PermissionHandler::getAllItems();
         $permissionLinks = PermissionHandler::getPermissions($idGroup);

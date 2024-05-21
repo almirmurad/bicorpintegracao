@@ -35,5 +35,6 @@ class HomeController extends Controller {
         ];
         $this->render('gerenciador.pages.index', $data);
     }
+    
 
 }

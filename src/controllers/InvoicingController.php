@@ -114,4 +114,11 @@ class InvoicingController extends Controller {
         
     }
 
+    public function totalInvoices(){
+
+        $total = InvoicingHandler::totalInvoices();
+
+        echo $total;
+    }
+
 }
