@@ -27,9 +27,10 @@ class InteractionHandler{
 
         $response = curl_exec($curl);
         $decoded = json_decode($response, true);
-        $idIntegration = $decoded['value']['Id'];
+        $idIntegration = $decoded['value']['Id']??NUll;
+        
         curl_close($curl);
-        return (!isset($idIntegration))? false : true;
+        return ($idIntegration !== null)?true:false;
        
         
     }

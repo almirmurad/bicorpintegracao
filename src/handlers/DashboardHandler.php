@@ -13,9 +13,9 @@ class DashboardHandler
     {   
         $t =[];
 
-        $t['totalDeals'] = Deal::select()->count();
+        $t['totalDeals']    = Deal::select()->count();
         $t['totalInvoices'] = Invoicing::select()->count();
-        $t['totalUsers'] = User::select()->count();
+        $t['totalUsers']    = User::select()->count();
 
         $totals = json_encode($t);
 

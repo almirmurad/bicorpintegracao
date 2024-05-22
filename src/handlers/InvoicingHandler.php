@@ -54,13 +54,17 @@ class InvoicingHandler
                 $appSecret = $_ENV['SECRETS_MSC'];
                 break;
             }
-        // busca o pedido através id do pedido no omie para pegar o número do OrderId para buscar o Deal no banco
-        ($pedidoOmie = Self::consultaPedidoOmie($invoicing->appKey, $appSecret, $invoicing->idPedido))?$idPedidoIntegracao = $pedidoOmie['pedido_venda_produto']['cabecalho']['codigo_pedido_integracao']: throw new PedidoNaoEncontradoOmieException('Pedido '.$invoicing->idPedido.' não encontrado no Omie ERP',1023);
+        // busca o pedido através id do pedido no omie retorna exceção se não encontrat 
+        if(!$pedidoOmie = Self::consultaPedidoOmie($invoicing->appKey, $appSecret, $invoicing->idPedido)){throw new PedidoNaoEncontradoOmieException('Pedido '.$invoicing->idPedido.' não encontrado no Omie ERP',1023);}
+        //verifica se existe o codigo de integração no pedido do  omie que é o OrderId para buscar o Deal no banco ou retorna nulo
+        $idPedidoIntegracao = (isset($pedidoOmie['pedido_venda_produto']['cabecalho']['codigo_pedido_integracao']))? $pedidoOmie['pedido_venda_produto']['cabecalho']['codigo_pedido_integracao']: null;
         //$idPedidoIntegracao=402303406;
-        // Busca o Deal salvo no banco com o número do pedido de integração para pegar os dados e montar o cabeçalho da mensagem
+        // Busca o Deal salvo no banco com o número do pedido de integração para pegar os dados e montar o cabeçalho da mensagem, caso não encontre retorna nulo e segue  
         $deal = Deal::select()->where('last_order_id', $idPedidoIntegracao)->one();
         //busca o cnpj do cliente para consultar o contact id no ploomes
         $cnpjClient = self::clienteIdOmie($invoicing->idCliente, $invoicing->appKey, $appSecret);
+
+  
         
         // echo'<pre><br>';
         // echo'-----------------------------------------------------------<br>';
@@ -117,11 +121,12 @@ class InvoicingHandler
         ];
 
         //Cria interação no card específico 
-        (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))? $message['addInteraction'] = 'Interação adicionada no card '.$deal['dealId'] : throw new InteracaoNaoAdicionadaException('Não foi possível adicionar a interação no card'.$deal['dealId'],1025);
+        (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))? $message['addInteraction'] = 'Interação adicionada no card ' : throw new InteracaoNaoAdicionadaException('Não foi possível adicionar a interação no card'.$deal['dealId'],1025);
         //muda a etapa da venda específica para NF-Emitida stage Id 40042597
         $stage = ['StageId'=> 40042597];
         $method = 'patch';
         (self::alterStageOrder(json_encode($stage), $idPedidoIntegracao, $baseApi, $method, $apiKey))? $message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda',1026);
+        
         return $message;
     }
     //CONSULTA PEDIDO NO OMIE
