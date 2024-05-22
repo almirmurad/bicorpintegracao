@@ -19,9 +19,16 @@ $router->get('/delHook/{id}', 'IntegracaoController@delHook');
 //Deals
 $router->get('/deals', 'DealController@index');
 $router->post('/winDeal', 'DealController@winDeal');
+
+//Orders
+$router->post('/newOrder', 'OrderController@newOrder');
+$router->post('/deletedOrder', 'OrderController@deletedOrder');
+
 //NFE
 $router->post('/invoiceIssue', 'InvoicingController@invoiceIssue');
-$router->get('/totalInvoices', 'InvoicingController@totalInvoices');
+$router->post('/deletedInvoice', 'InvoicingController@deletedInvoice');
+
+
 
 //Interactions
 $router->get('/interactions', 'InteractionController@index');

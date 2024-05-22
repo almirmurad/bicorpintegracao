@@ -4,5 +4,4 @@ composer.phar
 .DS_Store
 .env
 infos.txt
-public/assets/log.log
-public/assets/wbhk.log
+public/assets/*.log

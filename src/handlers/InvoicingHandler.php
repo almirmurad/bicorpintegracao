@@ -117,7 +117,7 @@ class InvoicingHandler
             'DealId'=> $infoDeal['dealId'],
             'TypeId'=> 1,
             'Title'=> 'Nota Fiscal emitida',
-            'Content'=> 'Pedido faturado no Omie. NF número: '. intval($invoicing->nNF),
+            'Content'=> ': '. intval($invoicing->nNF),
         ];
 
         //Cria interação no card específico 
@@ -125,8 +125,8 @@ class InvoicingHandler
         //muda a etapa da venda específica para NF-Emitida stage Id 40042597
         $stage = ['StageId'=> 40042597];
         $method = 'patch';
-        (self::alterStageOrder(json_encode($stage), $idPedidoIntegracao, $baseApi, $method, $apiKey))? $message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda',1026);
-        
+        (self::alterStageOrder(json_encode($stage), $idPedidoIntegracao, $baseApi, $method, $apiKey))? $message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda. Possivelmente a venda foi criada direto no Omie',1026);
+
         return $message;
     }
     //CONSULTA PEDIDO NO OMIE
@@ -287,7 +287,6 @@ class InvoicingHandler
             CURLOPT_CUSTOMREQUEST => strtoupper($method),
             CURLOPT_POSTFIELDS =>$stage,
             CURLOPT_HTTPHEADER => $headers
-
         ));
 
         $response = curl_exec($curl);
@@ -295,7 +294,7 @@ class InvoicingHandler
         $stage = json_decode($stage,true);
         curl_close($curl);
 
-       return ($response['stageid'] != $stage['StageId']) ? true :  false;
+       return ($response['value'][0]['StageId'] === $stage['StageId']) ? true :  false;
     }
     public static function clienteIdOmie($id, $appKey, $appSecret)
     {

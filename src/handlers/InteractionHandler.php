@@ -4,6 +4,8 @@ namespace src\handlers;
 class InteractionHandler{
 
     public static function createPloomesIteraction($json, $baseApi, $apiKey){
+
+       
         //CABEÇALHO DA REQUISIÇÃO
         $headers = [
             'User-Key:' . $apiKey,
@@ -27,7 +29,11 @@ class InteractionHandler{
 
         $response = curl_exec($curl);
         $decoded = json_decode($response, true);
-        $idIntegration = $decoded['value']['Id']??NUll;
+        $idIntegration = $decoded['value'][0]['Id']??Null;
+
+        // echo"IdInteraction?: ";
+        // print_r($idIntegration);
+        // exit;
         
         curl_close($curl);
         return ($idIntegration !== null)?true:false;

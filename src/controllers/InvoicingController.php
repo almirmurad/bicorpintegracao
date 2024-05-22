@@ -114,6 +114,21 @@ class InvoicingController extends Controller {
         
     }
 
+    public function deletedInvoice(){
+        $json = file_get_contents('php://input');
+            //$decoded = json_decode($json, true);
+
+            ob_start();
+            var_dump($json);
+            $input = ob_get_contents();
+            ob_end_clean();
+
+            file_put_contents('./assets/wbhkDelInv.log', $input . PHP_EOL, FILE_APPEND);
+            $pong = array("pong"=>true);
+            $json = json_encode($pong);
+            return print_r($json);
+    }
+
     public function totalInvoices(){
 
         $total = InvoicingHandler::totalInvoices();
