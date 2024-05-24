@@ -4,6 +4,7 @@ namespace src\handlers;
 
 use src\models\Deal;
 use src\models\Invoicing;
+use src\models\Omieorder;
 use src\models\User;
 
 class DashboardHandler
@@ -16,6 +17,7 @@ class DashboardHandler
         $t['totalDeals']    = Deal::select()->count();
         $t['totalInvoices'] = Invoicing::select()->count();
         $t['totalUsers']    = User::select()->count();
+        $t['totalOmieOrders']    = Omieorder::select()->count();
 
         $totals = json_encode($t);
 

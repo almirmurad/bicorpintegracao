@@ -21,7 +21,7 @@ $router->get('/deals', 'DealController@index');
 $router->post('/winDeal', 'DealController@winDeal');
 
 //Orders
-$router->post('/newOrder', 'OrderController@newOrder');
+$router->post('/newOmieOrder', 'OrderController@newOmieOrder');
 $router->post('/deletedOrder', 'OrderController@deletedOrder');
 
 //NFE

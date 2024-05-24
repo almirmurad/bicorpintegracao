@@ -22,17 +22,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let jsonTotalInvoices = ajax.responseText; //pega a resposta json em formato text
             let objJsonTotalInvoices = JSON.parse(jsonTotalInvoices);
+            
             let totalInvoices = objJsonTotalInvoices.totalInvoices;
             let totalDeals = objJsonTotalInvoices.totalDeals;
             let totalUsers = objJsonTotalInvoices.totalUsers;
+            let totalOmieOrders = objJsonTotalInvoices.totalOmieOrders;
 
             let targetInvoices = document.querySelector('#invoices > .content-box > .content-info > h3');
             let targetDeals = document.querySelector('#deals > .content-box > .content-info > h3');
             let targetUsers = document.querySelector('#users > .content-box > .content-info > h3');
+            let targetOrders = document.querySelector('#omieOrders > .content-box > .content-info > h3');
             
             targetInvoices.innerHTML = totalInvoices;
             targetDeals.innerHTML = totalDeals;
             targetUsers.innerHTML = totalUsers;
+            targetOrders.innerHTML = totalOmieOrders;
            
         }else{
             console.log(ajax.status);

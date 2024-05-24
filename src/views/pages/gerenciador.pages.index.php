@@ -69,6 +69,20 @@
                     </div>
                 </div>
                 <!-- Fim infoBox -->
+                <!-- Início infoBox -->
+                <div class="info-Box" id="omieOrders">
+                    <div class="title">
+                        <h2>Pedidos no Omie ERP</h2>
+                    </div>
+                    <div class="content-box">
+                        <div class="content-info">
+                            <h3>?</h3>
+                            <span>Total de pedidos criados no Omie ERP</span>
+                            <a href="">Ir para monitoramento</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Fim infoBox -->
                 </div>
         </section>
     </main>

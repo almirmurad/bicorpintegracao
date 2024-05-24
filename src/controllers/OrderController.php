@@ -2,7 +2,10 @@
 namespace src\controllers;
 
 use core\Controller;
+use src\exceptions\OrderControllerException;
+use src\exceptions\PedidoDuplicadoException;
 use src\handlers\LoginHandler;
+use src\handlers\OmieOrderHandler;
 
 class OrderController extends Controller {
     
@@ -33,21 +36,50 @@ class OrderController extends Controller {
         $this->render('gerenciador.pages.index', $data);
     }
 
-    public function newOrder(){
+    public function newOmieOrder(){
 
         $json = file_get_contents('php://input');
-            //$decoded = json_decode($json, true);
 
-            ob_start();
-            var_dump($json);
-            $input = ob_get_contents();
-            ob_end_clean();
+        ob_start();
+        var_dump($json);
+        $input = ob_get_contents();
+        ob_end_clean();
+        file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
+        exit;
 
-            file_put_contents('./assets/whkNewOrder.log', $input . PHP_EOL, FILE_APPEND);
-            $pong = array("pong"=>true);
-            $json = json_encode($pong);
-            return print_r($json);
+        try{
 
+            $response = json_encode(OmieOrderHandler::newOmieOrder($json));
+            if ($response) {
+                echo"<pre>";
+                json_encode($response);
+                //grava log
+                //$decoded = json_decode($response, true);
+                ob_start();
+                var_dump($response);
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
+
+            }
+
+        }catch(PedidoDuplicadoException $e){
+            echo $e->getMessage();
+        }catch(OrderControllerException $e){
+            echo $e->getMessage();
+        }finally{
+            if (isset($e)){
+                ob_start();
+                echo $e->getMessage();
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+                exit; 
+            }
+            exit;
+            //return print_r($response);
+        }
+            
     }
 
     public function deletedOrder(){
