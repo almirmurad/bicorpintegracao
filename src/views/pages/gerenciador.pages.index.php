@@ -16,7 +16,7 @@
                 <a class="button" href=""><span>Filtrar</span><i class="material-icons btn">more_vert</i></a> -->
             </div>
         </div>
-                <div class="content column ">
+                <div class="content  ">
                     <?php if(!empty($flash)):?>
                         <div class="area-flash flex">
                             <i class="material-symbols-outlined">
