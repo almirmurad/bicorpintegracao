@@ -3,10 +3,15 @@
 namespace src\handlers;
 
 use PDOException;
+use src\exceptions\ContactIdInexistentePloomesCRM;
+use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\OrderControllerException;
 use src\exceptions\PedidoDuplicadoException;
 use src\models\Deal;
-use src\models\Invoicing;
+use src\models\Homologacao_invoicing;
+use src\models\Homologacao_order;
+use src\models\Manospr_order;
+use src\models\Manossc_order;
 use src\models\Omieorder;
 use src\models\User;
 
@@ -14,63 +19,125 @@ class OmieOrderHandler
 {
    
 
-    public static function newOmieOrder($json){
+    public static function newOmieOrder($json, $apiKey, $baseApi){
         $current = date('d/m/Y H:i:s');
+        $message = [];
         
         //decodifica o json de pedidos vindos do webhook
         $decoded = json_decode($json,true);
 
         if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" ){
 
-            $order = new Omieorder();
-            $order->idOmie = $decoded['event']['idPedido'];
-            $order->codCliente = $decoded['event']['idCliente'];
-            //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-            $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
-            $order->numPedidoOmie = $decoded['event']['numeroPedido'];
-            //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-            $order->numContaCorrente = $decoded['event']['idContaCorrente'];
-            $order->codVendedorOmie = $decoded['author']['userId'];
-            //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)           
-            
-            try{
 
-                $id = Self::saveOmieOrder($order);
-                return $order;
+            switch($decoded['appKey']){
+                case 2337978328686:               
+                    $appSecret = $_ENV['SECRETS_MHL'];
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new Homologacao_order();
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];  
+   
+                    try{
 
-            }catch(PDOException $e){
-                echo $e->getMessage();
-                throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie '. $current, 1500);
-            }
+                        $id = HomologacaoOrderHandler::saveHomologacaoOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Homologação, id '.$id.'em: '.$current;
+                                                
+                    }catch(PDOException $e){
+                        echo $e->getMessage();
+                        throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+                    }
+                    
+                    break;
+                    
+                    case 2335095664902:
+                        $appSecret = $_ENV['SECRETS_MPR'];
+                        // Monta o objeto de Order Homologação com os dados do webhook
+                        $order = new Manospr_order();
+                        $order->idOmie = $decoded['event']['idPedido'];
+                        $order->codCliente = $decoded['event']['idCliente'];
+                        //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                        $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                        $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                        //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                        $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                        $order->codVendedorOmie = $decoded['author']['userId'];
+                        //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                        $order->appKey = $decoded['appKey'];
+
                         
-            // echo"<pre>";
-            // print_r($id);
-            // exit;
+                        try{
+                            
+                            $id = ManosPrOrderHandler::saveManosPrOrder($order);
+                            $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
+                           
+        
+                    }catch(PDOException $e){
+                        echo $e->getMessage();
+                        throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+                    }
 
-            return ($id > 0) ? $order : false;
+                    break;
+                    
+                case 2597402735928:
+                    $appSecret = $_ENV['SECRETS_MSC'];
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new Manossc_order();
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];
+
+                    try{
+
+                        $id = ManosScOrderHandler::saveManosScOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-SC id '.$id.'em: '.$current;
+                       
+        
+                    }catch(PDOException $e){
+                        echo $e->getMessage();
+                        throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+                    }
+
+                    break;
+                }
+
+            
+            //busca o cnpj do cliente através do id do omie
+            $cnpjClient = (InvoiceHandler::clienteIdOmie($order->codCliente, $order->appKey, $appSecret));
+            //busca o contactId do cliente no ploomes pelo cnpj
+            (!empty($contactId = InvoiceHandler::consultaClientePloomesCnpj($cnpjClient, $baseApi, $method='get', $apiKey)))?$contactId : throw new ContactIdInexistentePloomesCRM('Não foi Localizado no Ploomes CRM cliente cadastrado com o CNPJ: '.$cnpjClient.'',1505);
+            //monta a mensadem para atualizar o ploomes       
+            $msg=[
+                'ContactId' => $contactId,
+                'Content' => 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.',
+                'Title' => 'Pedido Criado Manualmente no Omie ERP'
+            ];
+
+            //cria uma interação no Ploomes
+            (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['order']['orderInteraction'] = 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.' : throw new InteracaoNaoAdicionadaException('Não foi possível enviar a mensagem de pedido criado manualmente no Omie ERP ao Ploomes CRM.',1010);
 
         }else{
             throw new OrderControllerException('<br> Havia um orçamento e não um pedido no webhook em '. $current, 1500);
         }
+
+        $message['order']['orderCreate'] = 'Pedido ('.intval($order->numPedidoOmie).'), criado manualmente no Omie ERP e Interação enviada ao ploomes em: '.$current;
+
+        return $message;
     }
     
-    public static function saveOmieOrder($order)
-    {   
-        $id = Omieorder::insert(
-            [
-                'id_omie'=>$order->idOmie,
-                'cod_cliente'=>$order->codCliente,
-                'cod_pedido_integracao'=>$order->codPedidoIntegracao ?? null,
-                'num_pedido_omie'=>$order->numPedidoOmie,
-                'cod_cliente_integracao'=>$order->codClienteIntegracao ?? null,
-                'data_previsao'=>$order->dataPrevisao,
-                'num_conta_corrente'=>$order->numContaCorrente,
-                'cod_vendedor_omie'=>$order->codVendedorOmie,
-                'id_vendedor_ploomes'=>$order->idVendedorPloomes ?? null,                
-                'created_at'=>date('Y-m-d H:i:s'),
-             ]
-        )->execute();
 
-        return ($id > 0 )? $id : false;
-    }
 }

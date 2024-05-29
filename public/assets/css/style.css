@@ -206,7 +206,7 @@ section{
 }
 .content{
     display: flex; 
-    flex-wrap: wrap; 
+    /* flex-wrap: wrap;  */
 
     height: 100%;
     overflow:scroll;
@@ -259,7 +259,10 @@ section{
     font-family: MontserratBold;
 }
 
-
+.row-content{
+    flex:1;
+    
+}
 .info-Box{
     width: 30%;
     min-width: 300px;
@@ -275,7 +278,9 @@ section{
     justify-content: center;
     height: 100%;
 }
+
 .content-info{
+    width: 100%;
     min-width: 30%;
     flex-direction: column;
     margin: 2%;
@@ -296,11 +301,50 @@ section{
     margin-bottom: 15px;
     color: #a9a9a9;
 }
+.total-geral{
+    width: 100%;
+    padding: 20px 0;
+    justify-content: space-around;
+}
+.desc-total{
+    width: 25%;
+    background-color:#f4f4f4;
+    font-size: .9em;
+    padding: 10px;
+    border-radius: 10px;
+    flex-direction: row;
+    font-weight: bold;
+    color: #a9a9a9;
+    justify-content: space-between;
+    border: 1px solid #a9a9a942;
+}
+.desc-total span{
+width: 20px;
+height: 20px;
+border-radius: 20px;
+background-color: #a9a9a9;
+padding: 2px;
+
+    font-size: 1em;
+    color: #FFF;
+    font-family: MontserratMedium;
+    margin: 0;
+
+}
+
 .area-filtro span,
 .content-info span, 
 .content-info a{
     font-size: 0.8em;
     font-family: MontserratMedium;
+}
+.content-info a{
+    display: flex;
+    background-color: #f4f4f4;
+    padding: 20px 0;
+    border: 1px solid #a9a9a942;
+    justify-content:center;
+    align-items: center;
 }
 .monit-users {
     width: 23%;

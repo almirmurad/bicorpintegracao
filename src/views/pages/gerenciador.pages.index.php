@@ -16,8 +16,8 @@
                 <a class="button" href=""><span>Filtrar</span><i class="material-icons btn">more_vert</i></a> -->
             </div>
         </div>
-                <div class="content  ">
-                <?php if(!empty($flash)):?>
+                <div class="content column ">
+                    <?php if(!empty($flash)):?>
                         <div class="area-flash flex">
                             <i class="material-symbols-outlined">
                             warning
@@ -27,62 +27,96 @@
                             </h4>
                         </div>
                     <?php endif;?>
-                <!-- Início infoBox -->
-                <div class="info-Box" id="invoices">
-                    <div class="title">
-                        <h2>Notas Integradas</h2>
-                    </div>
-                    <div class="content-box">
-                        <div class="content-info">
-                            <h3>?</h3>
-                            <span>Total de Notas Integradas</span>
-                            <a href="">Ir para monitoramento</a>
+
+                    <div class="row-content flex">
+
+                        <!-- Início infoBox -->
+                        <div class="info-Box" id="deals">
+                            <div class="title">
+                                <h2>Propostas Integradas</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <h3>?</h3>
+                                    <span>Total de propostas integradas pelo sistema</span>
+                                    <div class="total-geral flex">
+                                        <!-- <div class="desc-total flex center-center ">HML <span class="flex center-center" id="totalMHL">?</span></div>
+                                        <div class="desc-total flex center-center ">MPR <span class="flex center-center" id="totalMPR">?</span></div>
+                                        <div class="desc-total flex center-center ">MSC <span class="flex center-center" id="totalMSC">?</span></div> -->
+                                    </div>
+                                    <a href="">Ver detalhes da integração</a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <!-- Fim infoBox -->
-                <!-- Início infoBox -->
-                <div class="info-Box" id="deals">
-                    <div class="title">
-                        <h2>Propostas Integradas</h2>
-                    </div>
-                    <div class="content-box">
-                        <div class="content-info">
-                            <h3>?</h3>
-                            <span>Total de propostas integradas pelo sistema</span>
-                            <a href="">Ir para monitoramento</a>
+                        <!-- Fim infoBox -->
+
+                        <!-- Início infoBox -->
+                        <div class="info-Box" id="users">
+                            <div class="title">
+                                <h2>Usuários</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <h3>?</h3>
+                                    <span>Total de usuários do sistema</span>
+                                    <div class="total-geral flex">
+                                        <!-- <div class="desc-total flex center-center ">HML <span class="flex center-center" id="#">?</span></div>
+                                        <div class="desc-total flex center-center ">MPR <span class="flex center-center" id="#">?</span></div>
+                                        <div class="desc-total flex center-center ">MSC <span class="flex center-center" id="#">?</span></div> -->
+                                    </div>
+                                    <a href="">Ver detalhes da integração</a>
+                                </div>
+                            </div>
                         </div>
+                        <!-- Fim infoBox -->
+                        
                     </div>
-                </div>
-                <!-- Fim infoBox -->
-                <!-- Início infoBox -->
-                <div class="info-Box" id="users">
-                    <div class="title">
-                        <h2>Usuários</h2>
-                    </div>
-                    <div class="content-box">
-                        <div class="content-info">
-                            <h3>?</h3>
-                            <span>Total de usuários do sistema</span>
-                            <a href="">Ir para monitoramento</a>
+                    <div class="row-content flex">
+
+                        <!-- Início infoBox -->
+                        <div class="info-Box" id="omieOrders">
+                            <div class="title">
+                                <h2>Pedidos no Omie ERP</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <h3>?</h3>
+                                    <span>Total de pedidos criados no Omie ERP</span>
+                                    <div class="total-geral flex">
+                                        <div class="desc-total flex center-center ">HML <span class="flex center-center" id="totalOmieOrdersMHL">?</span></div>
+                                        <div class="desc-total flex center-center ">MPR <span class="flex center-center" id="totalOmieOrdersMPR">?</span></div>
+                                        <div class="desc-total flex center-center ">MSC <span class="flex center-center" id="totalOmieOrdersMSC">?</span></div>
+                                    </div>
+                                    <a href="">Ver detalhes da integração</a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <!-- Fim infoBox -->
-                <!-- Início infoBox -->
-                <div class="info-Box" id="omieOrders">
-                    <div class="title">
-                        <h2>Pedidos no Omie ERP</h2>
-                    </div>
-                    <div class="content-box">
-                        <div class="content-info">
-                            <h3>?</h3>
-                            <span>Total de pedidos criados no Omie ERP</span>
-                            <a href="">Ir para monitoramento</a>
+                        <!-- Fim infoBox -->
+                        <!-- Início infoBox -->
+                        <div class="info-Box" id="invoices">
+                            <div class="title">
+                                <h2>Notas Integradas</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <h3>?</h3>
+                                    <span>Total de Notas Integradas</span>
+                                    <div class="total-geral flex">
+                                        <div class="desc-total flex center-center ">HML <span class="flex center-center" id="totalInvoicesMHL">?</span></div>
+                                        <div class="desc-total flex center-center ">MPR <span class="flex center-center" id="totalInvoicesMPR">?</span></div>
+                                        <div class="desc-total flex center-center ">MSC <span class="flex center-center" id="totalInvoicesMSC">?</span></div>
+                                    </div>
+                                    <a href="" class="">Ver detalhes da integração</a>
+                                </div>
+                            </div>
                         </div>
+                        <!-- Fim infoBox -->
+                
+                        
                     </div>
-                </div>
-                <!-- Fim infoBox -->
+
+                
+                
                 </div>
         </section>
     </main>

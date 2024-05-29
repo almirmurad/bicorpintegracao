@@ -2,6 +2,8 @@
 namespace src\controllers;
 
 use core\Controller;
+use src\exceptions\ContactIdInexistentePloomesCRM;
+use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\OrderControllerException;
 use src\exceptions\PedidoDuplicadoException;
 use src\handlers\LoginHandler;
@@ -45,11 +47,10 @@ class OrderController extends Controller {
         $input = ob_get_contents();
         ob_end_clean();
         file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
-        exit;
 
         try{
 
-            $response = json_encode(OmieOrderHandler::newOmieOrder($json));
+            $response = json_encode(OmieOrderHandler::newOmieOrder($json, $this->apiKey, $this->baseApi));
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -60,12 +61,15 @@ class OrderController extends Controller {
                 $input = ob_get_contents();
                 ob_end_clean();
                 file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
-
             }
 
         }catch(PedidoDuplicadoException $e){
             echo $e->getMessage();
         }catch(OrderControllerException $e){
+            echo $e->getMessage();
+        }catch(ContactIdInexistentePloomesCRM $e){
+            echo $e->getMessage();
+        }catch(InteracaoNaoAdicionadaException $e){
             echo $e->getMessage();
         }finally{
             if (isset($e)){

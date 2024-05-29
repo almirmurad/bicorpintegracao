@@ -2,6 +2,6 @@
 namespace src\models;
 use \core\Model;
 
-class Invoicing extends Model {
+class Manossc_invoicing extends Model {
 
 }

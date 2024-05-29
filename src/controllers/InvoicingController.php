@@ -10,7 +10,7 @@ use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\NotaFiscalNaoEncontradaException;
 use src\exceptions\PedidoNaoEncontradoOmieException;
 use src\handlers\LoginHandler;
-use src\handlers\InvoicingHandler;
+use src\handlers\InvoiceHandler;
 use src\models\Deal;
 
 
@@ -66,7 +66,7 @@ class InvoicingController extends Controller {
         // $secrets = $this->secrets;
         // $ncc = $this->ncc;
         try{
-            $response = InvoicingHandler::readInvoiceHook($json, $baseApi, $method, $apiKey);
+            $response = InvoiceHandler::readInvoiceHook($json, $baseApi, $method, $apiKey);
             
             if ($response) {
                 echo"<pre>";
@@ -110,12 +110,17 @@ class InvoicingController extends Controller {
             print $e->getMessage();
         }
         finally{
-            ob_start();
-            var_dump($e->getMessage());
-            $input = ob_get_contents();
-            ob_end_clean();
-            file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-            exit; 
+            if(isset($e)){
+
+                ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+                exit; 
+            }
+            exit;
+            //return print_r($response);
         }
         
     }
@@ -137,7 +142,7 @@ class InvoicingController extends Controller {
 
     public function totalInvoices(){
 
-        $total = InvoicingHandler::totalInvoices();
+        $total = InvoiceHandler::totalInvoices();
 
         echo $total;
     }

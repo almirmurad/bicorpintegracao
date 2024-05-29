@@ -38,7 +38,7 @@ class DealHandler
         {    
             //salva o hook no banco
             $idWebhook = Self::saveWebhook($webhook);
-            $message['webhookMessage'] ='Novo webhook criado id = '.$webhook->webhookId . 'em: '. $current;
+            $message['webhookMessage'] ='Novo webhook criado id = '.$webhook->webhookId . ' em: '. $current;
             //other Properties
             $prop = [];
             foreach ($decoded['New']['OtherProperties'] as $key => $op) {
@@ -174,9 +174,9 @@ class DealHandler
             // print_r($notes);
             // exit;
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
-            (!empty($idClienteOmie = Self::clienteIdOmie($contactCnpj, $appKey, $appSecret))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em: '.$current,1006);
+            (!empty($idClienteOmie = Self::clienteIdOmie($contactCnpj, $appKey, $appSecret))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1006);
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
-            (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em: '.$current,1007);
+            (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1007);
             //inclui o pedido no omie
             $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes);
             //verifica se criou o pedido no omie
@@ -204,8 +204,10 @@ class DealHandler
                     'Title' => 'Pedido Criado'
                 ];
                 //cria uma interação no card
-                (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['interactionMessage'] = 'Integração concluída com sucesso!<br> Pedido Ploomes: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' gravados no Omie ERP com o numero: '.$incluiPedidoOmie->numero_pedido.' e mensagem enviada com sucesso em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem na venda',1010);
-            }            
+                (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['interactionMessage'] = 'Integração concluída com sucesso!<br> Pedido Ploomes: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' gravados no Omie ERP com o numero: '.intval($incluiPedidoOmie->numero_pedido).' e mensagem enviada com sucesso em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem na venda',1010);
+            }else{
+                $message['returnPedidoOmie'] ='Não foi possível gravar o pedido no Omie!';
+            }           
             
             return $message;
         } else {
