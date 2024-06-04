@@ -11,11 +11,13 @@ $router->get('/dashboard', 'DashboardController@index');
 $router->get('/login', 'LoginController@signin'); 
 $router->post('/login', 'LoginController@signinAction');
 $router->get('/logout', 'LoginController@signout'); 
+
 //webhooks
 $router->get('/integrar', 'IntegracaoController@index');
 $router->post('/integrar', 'IntegracaoController@integraAction');
 $router->get('/getAll', 'IntegracaoController@getAll');
 $router->get('/delHook/{id}', 'IntegracaoController@delHook');
+
 //Deals
 $router->get('/deals', 'DealController@index');
 $router->post('/winDeal', 'DealController@winDeal');
@@ -24,7 +26,7 @@ $router->post('/winDeal', 'DealController@winDeal');
 $router->post('/newOmieOrder', 'OrderController@newOmieOrder');
 $router->post('/deletedOrder', 'OrderController@deletedOrder');
 
-//NFE
+//Invoices NFE
 $router->post('/invoiceIssue', 'InvoicingController@invoiceIssue');
 $router->post('/deletedInvoice', 'InvoicingController@deletedInvoice');
 
@@ -33,9 +35,11 @@ $router->post('/deletedInvoice', 'InvoicingController@deletedInvoice');
 //Interactions
 $router->get('/interactions', 'InteractionController@index');
 $router->post('/newInteraction', 'InteractionController@createInteraction');
+
 //Configurações
 $router->get('/configs', 'ConfigController@index');
 $router->post('/define', 'ConfigController@defineConfig');
+
 //permissões
 $router->get('/permissions', 'PermissionController@index');
 $router->get('/addPermissionGroup', 'PermissionController@addPermissionGroup');

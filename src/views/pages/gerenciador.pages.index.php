@@ -111,7 +111,25 @@
                             </div>
                         </div>
                         <!-- Fim infoBox -->
-                
+                        <!-- Início infoBox -->
+                        <div class="info-Box" id="canceledInvoices">
+                            <div class="title">
+                                <h2>Notas Canceladas</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <h3>?</h3>
+                                    <span>Total de Notas Canceladas</span>
+                                    <div class="total-geral flex">
+                                        <div class="desc-total flex center-center ">HML <span class="flex center-center" id="totalCanceledInvoicesMHL">?</span></div>
+                                        <div class="desc-total flex center-center ">MPR <span class="flex center-center" id="totalCanceledInvoicesMPR">?</span></div>
+                                        <div class="desc-total flex center-center ">MSC <span class="flex center-center" id="totalCanceledInvoicesMSC">?</span></div>
+                                    </div>
+                                    <a href="" class="">Ver detalhes da integração</a>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Fim infoBox -->
                         
                     </div>
 

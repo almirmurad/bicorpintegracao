@@ -2,6 +2,7 @@
 
 namespace src\handlers;
 
+use PDOException;
 use src\models\Manossc_invoicing;
 
 class ManosScInvoicingHandler
@@ -31,5 +32,42 @@ class ManosScInvoicingHandler
             return "Erro ao cadastrar Faturamenro no banco de dados.";
         }
         return $id;
+    }
+
+    public static function isIssetInvoice($orderNumber){
+
+        try{
+
+        $id = Manossc_invoicing::select('id')
+                ->where('order_id',$orderNumber)
+                ->where('is_canceled',0)
+                ->execute();       
+        
+        return $id;
+                    
+
+        }catch(PDOException $e){
+            return $e->getMessage();
+        }
+
+    }
+
+    public static function alterManosScInvoice($orderNumber){
+
+
+        try{
+
+            Manossc_invoicing::update()
+                ->set('is_canceled', 1)
+                ->set('updated_at', date('Y-m-d H:i:s'))
+                ->where('order_id',$orderNumber)
+                ->execute();
+
+            return true;
+
+        }catch(PDOException $e){
+            return $e->getMessage();
+        }
+
     }
 }

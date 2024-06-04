@@ -2,11 +2,14 @@
 namespace src\controllers;
 
 use \core\Controller;
+use PDOException;
 use src\exceptions\WebhookReadErrorException;
 use src\exceptions\DealNaoEncontradoBDException;
 use src\exceptions\EstagiodavendaNaoAlteradoException;
 use src\exceptions\FaturamentoNaoCadastradoException;
 use src\exceptions\InteracaoNaoAdicionadaException;
+use src\exceptions\NotaFiscalNaoCadastradaException;
+use src\exceptions\NotaFiscalNaoCanceladaException;
 use src\exceptions\NotaFiscalNaoEncontradaException;
 use src\exceptions\PedidoNaoEncontradoOmieException;
 use src\handlers\LoginHandler;
@@ -125,26 +128,62 @@ class InvoicingController extends Controller {
         
     }
 
-    public function deletedInvoice(){
+    public function deletedInvoice()
+    {
+
+        $apiKey = $this->apiKey;
+        $baseApi = $this->baseApi;
+        $method = 'GET';
+        // $appKey = $this->appKey;
+        // $secrets = $this->secrets;
+        // $ncc = $this->ncc;
         $json = file_get_contents('php://input');
-            //$decoded = json_decode($json, true);
+           
+        try{
+            $response = InvoiceHandler::isDeletedInvoice($json, $baseApi, $method, $apiKey);
+            
+            if ($response) {
+                echo"<pre>";
+                json_encode($response);
+                //print_r($response);
+                //grava log
+                //$decoded = json_decode($response, true);
+                ob_start();
+                var_dump($response);
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+                exit;        
+                // return print_r($response);    
+            }
+        }catch(WebhookReadErrorException $e){
+                echo '<pre>';
+                print $e->getMessage();
+            }
+        catch(NotaFiscalNaoCadastradaException $e){
+            echo '<pre>';
+            print $e->getMessage();       
+        }
+        catch(NotaFiscalNaoCanceladaException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }catch(PDOException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        finally{
+            if(isset($e)){
+                ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+                exit; 
+            }           
+        }
 
-            ob_start();
-            var_dump($json);
-            $input = ob_get_contents();
-            ob_end_clean();
 
-            file_put_contents('./assets/wbhkDelInv.log', $input . PHP_EOL, FILE_APPEND);
-            $pong = array("pong"=>true);
-            $json = json_encode($pong);
-            return print_r($json);
-    }
 
-    public function totalInvoices(){
-
-        $total = InvoiceHandler::totalInvoices();
-
-        echo $total;
     }
 
 }

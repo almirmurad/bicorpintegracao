@@ -7,6 +7,8 @@ use src\exceptions\DealNaoEncontradoBDException;
 use src\exceptions\EstagiodavendaNaoAlteradoException;
 use src\exceptions\FaturamentoNaoCadastradoException;
 use src\exceptions\InteracaoNaoAdicionadaException;
+use src\exceptions\NotaFiscalNaoCadastradaException;
+use src\exceptions\NotaFiscalNaoCanceladaException;
 use src\exceptions\NotaFiscalNaoEncontradaException;
 use src\exceptions\PedidoNaoEncontradoOmieException;
 use src\exceptions\WebhookReadErrorException;
@@ -149,7 +151,7 @@ class InvoiceHandler
 
 
                     break;
-                }
+                }              
             
         }catch(NotaFiscalNaoEncontradaException $e){
             echo $e->getMessage();
@@ -196,6 +198,139 @@ class InvoiceHandler
 
         return $message;
     }
+
+    //RECEBE O WEBHOOK DE NOTA CANCELADA, CANCELA NO BANCO E ENVIA INTERAÇÃO NO PLOOMES CRM
+    public static function isDeletedInvoice($json, $baseApi, $method, $apiKey)
+    {
+
+        $message = [];
+        $current = date('d/m/Y H:i:s');
+        $decoded = json_decode($json, true);
+
+        if( $decoded['topic'] !== "NFe.NotaCancelada" && $decoded['event']['acao'] !== 'cancelada'){
+            throw new WebhookReadErrorException('Não foi possível ler o Webhook ou não existe nota fiscal cancelada!',1020);
+        }
+            
+           //VERIFICA PARA QUAL BASE DE NOTAS FISCAIS SERÁ EDITADA A NOTA
+           switch($decoded['appKey'])
+           {
+            case 2337978328686: //MHL    
+                
+                try{
+                    $id = HomologacaoInvoicingHandler::isIssetInvoice($decoded['event']['id_pedido']);
+                    if(is_string($id)){
+                        throw new NotaFiscalNaoCadastradaException('Erro ao consultar a base de dados de Manos Homologação. Erro: '.$id. 'em '.$current, 1030);
+                        }elseif(empty($id)){
+                        throw new NotaFiscalNaoCadastradaException('Nota fiscal não cadastrada na base de dados de notas de Manos-PR , ou já foi cancelada em '.$current, 1030);
+                    }else{$message['invoice']['issetInvoice'] = 'Nota fiscal do pedido '. $decoded['event']['id_pedido'] .'encontrada na base em '.$current;
+                    }
+
+                }catch(NotaFiscalNaoCadastradaException $e){
+                    //$message['invoice']['error']['notRegistered'] =;
+                    throw new NotaFiscalNaoCadastradaException( $e->getMessage());
+                }
+                        
+                //altera a nota fiscal no banco para cancelada
+                try{
+                    //Altera a nota para cancelada no banco MHL
+                    $altera = HomologacaoInvoicingHandler::alterHomologacaoInvoice($decoded['event']['id_pedido']);
+
+                    if(is_string($altera)){
+                        throw new NotaFiscalNaoCanceladaException('Erro ao consultar a base de dados de Manos Homologação. Erro: '.$altera. 'em '.$current, 1030);                     
+                    }
+
+                    $message['invoice']['iscanceled'] = 'Nota fiscal do pedido '. $decoded['event']['id_pedido'] .'cancelada com sucesso em '.$current;
+                    
+                }catch(NotaFiscalNaoCanceladaException $e){          
+                    throw new NotaFiscalNaoCanceladaException($e->getMessage(), 1031);
+                }
+
+                break;
+                
+            case 2335095664902: // MPR
+                
+                try{
+                    $id = ManosPrInvoicingHandler::isIssetInvoice($decoded['event']['id_pedido']);
+                    if(is_string($id)){
+                        throw new NotaFiscalNaoCadastradaException('Erro ao consultar a base de dados de Manos-PR. Erro: '.$id. 'em '.$current, 1030);
+                        }elseif(empty($id)){
+                        throw new NotaFiscalNaoCadastradaException('Nota fiscal não cadastrada na base de dados de notas de Manos-PR , ou já foi cancelada em '.$current, 1030);
+                    }else{$message['invoice']['issetInvoice'] = 'Nota fiscal do pedido '. $decoded['event']['id_pedido'] .'encontrada na base em '.$current;
+                    }
+
+                }catch(NotaFiscalNaoCadastradaException $e){
+                    //$message['invoice']['error']['notRegistered'] =;
+                    throw new NotaFiscalNaoCadastradaException( $e->getMessage());
+                }
+                        
+                //altera a nota fiscal no banco para cancelada
+                try{
+                    //Altera a nota para cancelada no banco MHL
+                    $altera = ManosPrInvoicingHandler::alterManosPrInvoiceHandler($decoded['event']['id_pedido']);
+
+                    if(is_string($altera)){
+                        throw new NotaFiscalNaoCanceladaException('Erro ao consultar a base de dados de Manos Homologação. Erro: '.$altera. 'em '.$current, 1030);                     
+                    }
+
+                    $message['invoice']['iscanceled'] = 'Nota fiscal do pedido '. $decoded['event']['id_pedido'] .'cancelada com sucesso em '.$current;
+                    
+                }catch(NotaFiscalNaoCanceladaException $e){          
+                    throw new NotaFiscalNaoCanceladaException($e->getMessage(), 1031);
+                }
+
+            break;
+                
+            case 2597402735928: // MSC
+                
+                try{
+                    $id = ManosScInvoicingHandler::isIssetInvoice($decoded['event']['id_pedido']);
+                    if(is_string($id)){
+                        throw new NotaFiscalNaoCadastradaException('Erro ao consultar a base de dados de Manos-SC. Erro: '.$id. 'em '.$current, 1030);
+                        }elseif(empty($id)){
+                        throw new NotaFiscalNaoCadastradaException('Nota fiscal não cadastrada na base de dados de notas de Manos-SC , ou já foi cancelada em '.$current, 1030);
+                    }else{$message['invoice']['issetInvoice'] = 'Nota fiscal do pedido '. $decoded['event']['id_pedido'] .'encontrada na base em '.$current;
+                    }
+
+                }catch(NotaFiscalNaoCadastradaException $e){
+                    //$message['invoice']['error']['notRegistered'] =;
+                    throw new NotaFiscalNaoCadastradaException( $e->getMessage());
+                }
+                        
+                //altera a nota fiscal no banco para cancelada
+                try{
+                    //Altera a nota para cancelada no banco MHL
+                    $altera = ManosScInvoicingHandler::alterManosScInvoice($decoded['event']['id_pedido']);
+
+                    if(is_string($altera)){
+                        throw new NotaFiscalNaoCanceladaException('Erro ao consultar a base de dados de Manos-SC. Erro: '.$altera. 'em '.$current, 1030);                     
+                    }
+
+                    $message['invoice']['iscanceled'] = 'Nota fiscal do pedido '. $decoded['event']['id_pedido'] .' cancelada com sucesso em '.$current;
+                    
+                }catch(NotaFiscalNaoCanceladaException $e){          
+                    throw new NotaFiscalNaoCanceladaException($e->getMessage(), 1031);
+                }
+
+                break;
+            }
+
+            //busca o contact id do cliente no P`loomes CRM através do cnpj do cliente no Omie ERP
+            $contactId = Self::consultaClientePloomesCnpj($decoded['event']['empresa_cnpj'],$baseApi, $method, $apiKey);
+            //monta a mensadem para atualizar o card do ploomes
+            $msg=[
+                'ContactId' => $contactId,
+                'Content' => 'Nota fiscal '.intval($decoded['event']['numero_nf']).' cancelada no Omie ERP em: '.$current,
+                'Title' => 'Nota Fiscal Cancelada no Omie ERP'
+            ];
+
+            //cria uma interação no card
+            (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['interactionMessage'] = 'Integração de cancelamento de nota fiscal concluída com sucesso!<br> Nota Fiscal: '.intval($decoded['event']['numero_nf']).' foi cancelada no Omie ERP e interação criada no cliente id: '.$contactId.' em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem de nota cancelada no Ploomes CRM',1032);
+
+            return $message;
+
+
+    }
+
     //CONSULTA PEDIDO NO OMIE
     public static function consultaPedidoOmie($appKey, $appSecret, $orderId )
     {   
@@ -380,13 +515,4 @@ class InvoiceHandler
         return $cnpj;
     }
 
-    public static function totalInvoices(){
-        $total = [];
-        
-        $total['total'] = Homologacao_invoicing::select()->count();
-
-        $total = json_encode($total);
-
-        return $total;
-    }
 }

@@ -15,6 +15,16 @@ class DiverseFunctions{
         return $datePtFn;
     }
 
+    public static function convertDateHora($date)
+    {
+
+        $dateIni = explode('T', $date);
+        $datePt = explode('-', $dateIni[0]);
+        $datePtFn = implode("/", array_reverse($datePt)) . " às " . $dateIni[1];
+
+        return $datePtFn;
+    }
+
     public static function limpa_cpf_cnpj($valor){
         $valor = trim($valor);
         $valor = str_replace(array('.','-','/'), "", $valor);

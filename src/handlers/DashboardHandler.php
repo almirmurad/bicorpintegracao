@@ -24,6 +24,10 @@ class DashboardHandler
         $t['totalInvoicesMPR'] = Manospr_invoicing::select()->count();
         $t['totalInvoicesMSC'] = Manossc_invoicing::select()->count();
         $t['totalInvoices'] = $t['totalInvoicesHML'] + $t['totalInvoicesMPR'] + $t['totalInvoicesMSC'];
+        $t['totalCanceledInvoicesHML'] = Homologacao_invoicing::select()->where('is_canceled', 1)->count();
+        $t['totalCanceledInvoicesMPR'] = Manospr_invoicing::select()->where('is_canceled', 1)->count();
+        $t['totalCanceledInvoicesMSC'] = Manossc_invoicing::select()->where('is_canceled', 1)->count();
+        $t['totalCanceledInvoices'] = $t['totalCanceledInvoicesHML'] + $t['totalCanceledInvoicesMPR'] + $t['totalCanceledInvoicesMSC'];
         $t['totalUsers']    = User::select()->count();
         $t['totalOmieOrdersHML']    = Homologacao_order::select()->count();
         $t['totalOmieOrdersMPR']    = Manospr_order::select()->count();

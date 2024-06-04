@@ -330,6 +330,29 @@ section{
 
 }
 
+#canceledInvoices .title h2,
+#canceledInvoices .content-info h3,
+#canceledInvoices .content-info span,
+#canceledInvoices .total-geral .desc-total,
+#canceledInvoices .total-geral .desc-total,
+#canceledInvoices .total-geral .desc-total
+{
+color:red;
+}
+
+#canceledInvoices .total-geral span
+{
+color:var(--branco);
+background-color: red;
+}
+#canceledInvoices .total-geral .desc-total,
+#canceledInvoices .total-geral .desc-total,
+#canceledInvoices .total-geral .desc-total
+{
+    border-color: red;
+}
+
+
 .area-filtro span,
 .content-info span, 
 .content-info a{
