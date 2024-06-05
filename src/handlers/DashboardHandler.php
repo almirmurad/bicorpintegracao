@@ -9,7 +9,6 @@ use src\models\Manospr_invoicing;
 use src\models\Manospr_order;
 use src\models\Manossc_invoicing;
 use src\models\Manossc_order;
-use src\models\Omieorder;
 use src\models\User;
 
 class DashboardHandler
@@ -28,6 +27,10 @@ class DashboardHandler
         $t['totalCanceledInvoicesMPR'] = Manospr_invoicing::select()->where('is_canceled', 1)->count();
         $t['totalCanceledInvoicesMSC'] = Manossc_invoicing::select()->where('is_canceled', 1)->count();
         $t['totalCanceledInvoices'] = $t['totalCanceledInvoicesHML'] + $t['totalCanceledInvoicesMPR'] + $t['totalCanceledInvoicesMSC'];
+        $t['totalCanceledOrdersHML'] = Homologacao_order::select()->where('is_canceled', 1)->count();
+        $t['totalCanceledOrdersMPR'] = Manospr_order::select()->where('is_canceled', 1)->count();
+        $t['totalCanceledOrdersMSC'] = Manossc_order::select()->where('is_canceled', 1)->count();
+        $t['totalCanceledOrders'] = $t['totalCanceledOrdersHML'] + $t['totalCanceledOrdersMPR'] + $t['totalCanceledOrdersMSC'];
         $t['totalUsers']    = User::select()->count();
         $t['totalOmieOrdersHML']    = Homologacao_order::select()->count();
         $t['totalOmieOrdersMPR']    = Manospr_order::select()->count();

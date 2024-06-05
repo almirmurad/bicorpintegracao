@@ -5,7 +5,10 @@ use core\Controller;
 use src\exceptions\ContactIdInexistentePloomesCRM;
 use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\OrderControllerException;
+use src\exceptions\PedidoCanceladoException;
 use src\exceptions\PedidoDuplicadoException;
+use src\exceptions\PedidoInexistenteException;
+use src\exceptions\PedidoNaoExcluidoException;
 use src\handlers\LoginHandler;
 use src\handlers\OmieOrderHandler;
 
@@ -88,17 +91,62 @@ class OrderController extends Controller {
 
     public function deletedOrder(){
         $json = file_get_contents('php://input');
-            //$decoded = json_decode($json, true);
+            // //$decoded = json_decode($json, true);
 
-            ob_start();
-            var_dump($json);
-            $input = ob_get_contents();
-            ob_end_clean();
+            // ob_start();
+            // var_dump($json);
+            // $input = ob_get_contents();
+            // ob_end_clean();
 
-            file_put_contents('./assets/whkDelOrder.log', $input . PHP_EOL, FILE_APPEND);
-            $pong = array("pong"=>true);
-            $json = json_encode($pong);
-            return print_r($json);
+            // file_put_contents('./assets/whkDelOrder.log', $input . PHP_EOL, FILE_APPEND);
+            // $pong = array("pong"=>true);
+            // $json = json_encode($pong);
+            // return print_r($json);
+
+        try{
+
+            $response = json_encode(OmieOrderHandler::deletedOrder($json, $this->apiKey, $this->baseApi));
+            if ($response) {
+                echo"<pre>";
+                json_encode($response);
+                //grava log
+                //$decoded = json_decode($response, true);
+                ob_start();
+                var_dump($response);
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
+            }
+
+        }catch(PedidoInexistenteException $e){
+            echo $e->getMessage();
+        }catch(PedidoCanceladoException $e){
+            echo $e->getMessage();
+        }catch(PedidoNaoExcluidoException $e){
+            echo $e->getMessage();
+        }
+        catch(PedidoDuplicadoException $e){
+            echo $e->getMessage();
+        }catch(OrderControllerException $e){
+            echo $e->getMessage();
+        }catch(ContactIdInexistentePloomesCRM $e){
+            echo $e->getMessage();
+        }catch(InteracaoNaoAdicionadaException $e){
+            echo $e->getMessage();
+        }finally{
+            if (isset($e)){
+                ob_start();
+                echo $e->getMessage();
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+                exit; 
+            }
+            exit;
+            //return print_r($response);
+        }
+
+
     }
 
 

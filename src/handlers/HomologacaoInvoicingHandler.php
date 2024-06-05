@@ -4,6 +4,7 @@ namespace src\handlers;
 
 use PDOException;
 use src\models\Homologacao_invoicing;
+use src\models\Homologacao_order;
 
 class HomologacaoInvoicingHandler
 {

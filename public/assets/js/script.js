@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let ajax = new XMLHttpRequest();//instancia o ajax
 
-   // ajax.open('GET','http://localhost/bicorpIntegracao/public/dashboard');//envia requisição
-    ajax.open('GET','https://fiel.bicorp.online/public/dashboard');//envia requisição
+    ajax.open('GET','http://localhost/bicorpIntegracao/public/dashboard');//envia requisição
+    //ajax.open('GET','https://fiel.bicorp.online/public/dashboard');//envia requisição
 
     ajax.onreadystatechange = ()=>{
 
@@ -34,6 +34,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let totalCanceledInvoicesMSC = objJsonTotalInvoices.totalCanceledInvoicesMSC;
             let totalCanceledInvoices = objJsonTotalInvoices.totalCanceledInvoices;
 
+            let totalCanceledOrdersHML = objJsonTotalInvoices.totalCanceledOrdersHML;
+            let totalCanceledOrdersMPR = objJsonTotalInvoices.totalCanceledOrdersMPR;
+            let totalCanceledOrdersMSC = objJsonTotalInvoices.totalCanceledOrdersMSC;
+            let totalCanceledOrders = objJsonTotalInvoices.totalCanceledOrders;
+
             let totalOmieOrders = objJsonTotalInvoices.totalOmieOrders;
             let totalOmieOrdersHML = objJsonTotalInvoices.totalOmieOrdersHML;
             let totalOmieOrdersMPR = objJsonTotalInvoices.totalOmieOrdersMPR;
@@ -45,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let targetInvoices = document.querySelector('#invoices > .content-box > .content-info > h3');
             let targetCanceledInvoices = document.querySelector('#canceledInvoices > .content-box > .content-info > h3');
+            let targetCanceledOrders = document.querySelector('#canceledOrders > .content-box > .content-info > h3');
             let targetDeals = document.querySelector('#deals > .content-box > .content-info > h3');
             let targetUsers = document.querySelector('#users > .content-box > .content-info > h3');
             let targetOrders = document.querySelector('#omieOrders > .content-box > .content-info > h3');
@@ -56,6 +62,10 @@ document.addEventListener('DOMContentLoaded', function() {
             let targetCanceledInvoicesHML = document.querySelector('#totalCanceledInvoicesMHL');
             let targetCanceledInvoicesMPR = document.querySelector('#totalCanceledInvoicesMPR');
             let targetCanceledInvoicesMSC = document.querySelector('#totalCanceledInvoicesMSC');
+
+            let targetCanceledOrdersHML = document.querySelector('#totalCanceledOrdersMHL');
+            let targetCanceledOrdersMPR = document.querySelector('#totalCanceledOrdersMPR');
+            let targetCanceledOrdersMSC = document.querySelector('#totalCanceledOrdersMSC');
             
             let targetOmieOrdersHML = document.querySelector('#totalOmieOrdersMHL');
             let targetOmieOrdersMPR = document.querySelector('#totalOmieOrdersMPR');
@@ -70,6 +80,11 @@ document.addEventListener('DOMContentLoaded', function() {
             targetCanceledInvoicesHML.innerHTML = totalCanceledInvoicesHML;
             targetCanceledInvoicesMPR.innerHTML = totalCanceledInvoicesMPR;
             targetCanceledInvoicesMSC.innerHTML = totalCanceledInvoicesMSC;
+
+            targetCanceledOrders.innerHTML = totalCanceledOrders;
+            targetCanceledOrdersHML.innerHTML = totalCanceledOrdersHML;
+            targetCanceledOrdersMPR.innerHTML = totalCanceledOrdersMPR;
+            targetCanceledOrdersMSC.innerHTML = totalCanceledOrdersMSC;
 
             targetDeals.innerHTML = totalDeals;
             targetOmieOrdersHML.innerHTML = totalOmieOrdersHML;

@@ -2,6 +2,7 @@
 
 namespace src\handlers;
 
+use PDOException;
 use src\models\Manospr_order;
 
 class ManosPrOrderHandler
@@ -27,4 +28,54 @@ class ManosPrOrderHandler
 
         return ($id > 0 )? $id : false;
     }
+
+
+    public static function isIssetOrder($orderNumber){
+
+        try{
+
+        $id = Manospr_order::select('id')
+                ->where('id_omie',$orderNumber)
+                ->execute();       
+        
+        return $id;
+                    
+
+        }catch(PDOException $e){
+            return $e->getMessage();
+        }
+
+    }
+
+    public static function alterManosPrOrder($orderNumber){
+
+
+        try{
+
+            Manospr_order::update()
+                ->set('is_canceled', 1)
+                ->set('updated_at', date('Y-m-d H:i:s'))
+                ->where('id_omie',$orderNumber)
+                ->execute();
+
+            return true;
+
+        }catch(PDOException $e){
+            return $e->getMessage();
+        }
+
+    }
+
+    public static function excluiManosPrOrder($orderNumber){
+        try{
+         Manospr_order::delete()
+         ->where('id_omie', $orderNumber)
+         ->execute();
+ 
+        }catch(PDOException $e){
+             return $e->getMessage();
+        }
+         
+         return true;
+     }
 }

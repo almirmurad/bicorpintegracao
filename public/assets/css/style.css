@@ -261,6 +261,7 @@ section{
    
     width: 100%;
     flex-direction: row;
+    flex-wrap: wrap;
 }
 .info-Box{
     width: 30%;
@@ -335,19 +336,29 @@ section{
 #canceledInvoices .content-info span,
 #canceledInvoices .total-geral .desc-total,
 #canceledInvoices .total-geral .desc-total,
-#canceledInvoices .total-geral .desc-total
+#canceledInvoices .total-geral .desc-total,
+#canceledOrders .title h2,
+#canceledOrders .content-info h3,
+#canceledOrders .content-info span,
+#canceledOrders .total-geral .desc-total,
+#canceledOrders .total-geral .desc-total,
+#canceledOrders .total-geral .desc-total
 {
 color:red;
 }
 
-#canceledInvoices .total-geral span
+#canceledInvoices .total-geral span,
+#canceledOrders .total-geral span
 {
 color:var(--branco);
 background-color: red;
 }
 #canceledInvoices .total-geral .desc-total,
 #canceledInvoices .total-geral .desc-total,
-#canceledInvoices .total-geral .desc-total
+#canceledInvoices .total-geral .desc-total,
+#canceledOrders .total-geral .desc-total,
+#canceledOrders .total-geral .desc-total,
+#canceledOrders .total-geral .desc-total
 {
     border-color: red;
 }
