@@ -122,7 +122,6 @@ class DealHandler
             $deal->publicFormIdUpdate = $decoded['New']['PublicFormIdUpdate']; // Id do formulário externo de atualização
             $deal->webhookId = $webhook->webhookId; //inclui o id do webhook no deal
             //Encontra a base de faturamento
-            // $deal->baseFaturamento = 404096109;
             switch ($deal->baseFaturamento) {
                 case 404096111:
                     $deal->baseFaturamentoTitle = 'Manos PR';
@@ -171,8 +170,6 @@ class DealHandler
             }
             //busca Observação da Proposta (Quote)
             ($notes = strip_tags(Self::requestQuote($deal->lastQuoteId, $baseApi, $method, $apiKey)))? $notes : $notes='Venda à Vista!';
-            // print_r($notes);
-            // exit;
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
             (!empty($idClienteOmie = Self::clienteIdOmie($contactCnpj, $appKey, $appSecret))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1006);
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
@@ -192,9 +189,6 @@ class DealHandler
                     $deal->omieOrderId = $incluiPedidoOmie->codigo_pedido;
                     $dealCreatedId = Self::saveDeal($deal);   
                     $message['dealMessage'] ='Id do Deal no Banco de Dados: '.$dealCreatedId;  
-                    
-                    
-                    
                 }
                 //monta a mensadem para atualizar o card do ploomes
                 $msg=[
@@ -217,10 +211,7 @@ class DealHandler
     //CRIA PEDIDO NO OMIE
     public static function criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $finishDate, $lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes)
     {   
-        // echo'<pre>';
-        // $prd = json_encode($productsOrder);
-        // print_r($prd);
-        // exit;
+
         $jsonOmie = [
             'app_key' => $appKey,
             'app_secret' => $appSecret,
@@ -277,14 +268,9 @@ class DealHandler
                 ]
             ],
         ];
-       
-        // echo"<pre>";            
-        $jsonOmie = json_encode($jsonOmie);
-        // print_r($jsonOmie);
-        // exit;
-        // echo'<pre>';
-        // print_r($json);
-        // exit;
+          
+        $jsonOmie = json_encode($jsonOmie,JSON_UNESCAPED_UNICODE);
+
         $curl = curl_init();
 
         curl_setopt_array($curl, array(

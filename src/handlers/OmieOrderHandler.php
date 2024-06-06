@@ -23,6 +23,8 @@ class OmieOrderHandler
    
 
     public static function newOmieOrder($json, $apiKey, $baseApi){
+
+        
         $current = date('d/m/Y H:i:s');
         $message = [];
         
@@ -30,6 +32,7 @@ class OmieOrderHandler
         $decoded = json_decode($json,true);
 
         if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" ){
+
 
 
             switch($decoded['appKey']){
@@ -61,6 +64,7 @@ class OmieOrderHandler
                     break;
                     
                     case 2335095664902:
+
                         $appSecret = $_ENV['SECRETS_MPR'];
                         // Monta o objeto de Order Homologação com os dados do webhook
                         $order = new Manospr_order();
@@ -76,9 +80,11 @@ class OmieOrderHandler
                         $order->appKey = $decoded['appKey'];
 
                         
+
+                        
                         try{
                             
-                            $id = ManosScOrderHandler::alterManosScOrder($order);
+                            $id = ManosPrOrderHandler::saveManosPrOrder($order);
                             $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
                            
         

@@ -91,14 +91,14 @@ class OrderController extends Controller {
 
     public function deletedOrder(){
         $json = file_get_contents('php://input');
-            // //$decoded = json_decode($json, true);
+            //$decoded = json_decode($json, true);
 
-            // ob_start();
-            // var_dump($json);
-            // $input = ob_get_contents();
-            // ob_end_clean();
+            ob_start();
+            var_dump($json);
+            $input = ob_get_contents();
+            ob_end_clean();
 
-            // file_put_contents('./assets/whkDelOrder.log', $input . PHP_EOL, FILE_APPEND);
+            file_put_contents('./assets/whkDelOrder.log', $input . PHP_EOL, FILE_APPEND);
             // $pong = array("pong"=>true);
             // $json = json_encode($pong);
             // return print_r($json);
@@ -142,8 +142,8 @@ class OrderController extends Controller {
                 file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
                 exit; 
             }
+            return print_r($response);
             exit;
-            //return print_r($response);
         }
 
 
