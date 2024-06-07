@@ -9,6 +9,7 @@ use src\exceptions\WebhookReadErrorException;
 use src\exceptions\BaseFaturamentoInexistenteException;
 use src\exceptions\ClienteInexistenteException;
 use src\exceptions\CnpjClienteInexistenteException;
+use src\exceptions\DealNaoExcluidoBDException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
@@ -119,9 +120,59 @@ class DealController extends Controller {
             var_dump($e->getMessage());
             $input = ob_get_contents();
             ob_end_clean();
+            file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+            exit; 
+        }
+        
+    }
+
+
+    public function deletedDeal()
+    {
+        $json = file_get_contents('php://input');
+
+        try{
+            $response = DealHandler::deletedDealHook($json);
+            if ($response) {
+                echo"<pre>";
+                json_encode($response);
+                print_r($response);
+                //grava log
+                //$decoded = json_decode($response, true);
+                ob_start();
+                var_dump($response);
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                exit;            
+            }
+        }catch(WebhookReadErrorException $e){
+            echo '<pre>';
+            print $e->getMessage();           
+        }
+        catch(BaseFaturamentoInexistenteException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        catch(DealNaoExcluidoBDException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }
+        finally{
+            ob_start();
+            var_dump($e->getMessage());
+            $input = ob_get_contents();
+            ob_end_clean();
             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
             exit; 
         }
+
+        $ping = json_encode([
+            'pong' => 'true',
+            'message' => $response,
+        ]);
+
+        return print_r($ping);
         
     }
 

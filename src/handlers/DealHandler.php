@@ -2,9 +2,12 @@
 
 namespace src\handlers;
 
+use PDOException;
 use src\exceptions\BaseFaturamentoInexistenteException;
 use src\exceptions\ClienteInexistenteException;
 use src\exceptions\CnpjClienteInexistenteException;
+use src\exceptions\DealNaoEncontradoBDException;
+use src\exceptions\DealNaoExcluidoBDException;
 use src\exceptions\EmailVendedorNaoExistenteException;
 use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\PedidoInexistenteException;
@@ -208,6 +211,34 @@ class DealHandler
             throw new WebhookReadErrorException('Não era um Card Ganho ou não havia venda na proposta do card Nº '.$decoded['New']['Id'].' data '.$current ,1009);
         }                
     }
+
+    //LÊ O WEBHOOK DE CARD EXCLUIDO
+    public static function deletedDealHook($json){
+        $current = date('d/m/Y H:i:s');
+        $message = [];
+
+        $decoded = json_decode($json, true);
+        //verifica se o webhook é de card excluido
+        if($decoded['Action'] !== 'Delete' && $decoded['Deals']) {
+            throw new WebhookReadErrorException('Não havia um card deletado no webhook - '.$current . PHP_EOL, 1010);
+        }
+        //Exclui o Deal da base de dados 
+        try{
+            $delete = Deal::delete()->where('deal_id', $decoded['Old']['Id'])->execute();
+            $total = $delete->rowCount();
+            ($total > 0)?
+            $message ['deal']['deleted'] = 'Proposta (total = '.$total.') excluída da base de dados do sistema de integração - '.$current . PHP_EOL:$message ['deal']['notdeleted'] = 'Proposta não encontrada na base de dados da integração ou já foi deletada. - '.$current . PHP_EOL;
+            
+        }
+        catch(PDOException $e)
+        {
+            throw new DealNaoExcluidoBDException('Erro ao consultar a base de dados do sistema de integração. Erro: '. $e->getMessage() .' - '. $current . PHP_EOL, 1012);
+        }
+
+        return $message;
+
+    }
+
     //CRIA PEDIDO NO OMIE
     public static function criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $finishDate, $lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes)
     {   

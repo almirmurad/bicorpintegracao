@@ -21,6 +21,7 @@ $router->get('/delHook/{id}', 'IntegracaoController@delHook');
 //Deals
 $router->get('/deals', 'DealController@index');
 $router->post('/winDeal', 'DealController@winDeal');
+$router->post('/deletedDeal', 'DealController@deletedDeal');
 
 //Orders
 $router->post('/newOmieOrder', 'OrderController@newOmieOrder');

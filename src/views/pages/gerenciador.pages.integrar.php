@@ -47,6 +47,7 @@
                                 <option value="4">Ganho</option>
                                 <option value="5">perdido</option>
                                 <option value="6">Reaberto</option>
+                                <option value="3">Excluído</option>
                             </select>
                         </div>
                         <div class="campo">
