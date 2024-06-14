@@ -149,6 +149,8 @@ class DealHandler
             }
             //busca a venda no ploomes
             (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes. Card id: '.$deal->id.' em: '.$current,1004 );
+            // print_r($arrayRequestOrder);
+            // exit;
             //array de produtos da venda
             $productsRequestOrder = $arrayRequestOrder[0]->Products;
             
@@ -371,9 +373,6 @@ class DealHandler
     //ENCONTRA A VENDA NO PLOOMES
     public static function requestOrder($orderId, $baseApi, $method, $apiKey)
     {
-        /**
-         * {{server}}/Orders?$filter=Id+eq+402118677&$expand=Products($select=Product,Quantity;$expand=Parts($expand=Product($select=Code),OtherProperties),Product($select=Code),)&$orderby=Id
-         */
 
         $headers = [
             'User-Key:' . $apiKey,
@@ -402,7 +401,7 @@ class DealHandler
       
         return $order;
     }
-    //ENCONTRA A VENDA NO PLOOMES
+    //ENCONTRA A PROPOSTA NO PLOOMES
     public static function requestQuote($quoteId, $baseApi, $method, $apiKey)
     {
         /**

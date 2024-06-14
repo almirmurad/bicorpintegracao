@@ -10,6 +10,7 @@ use src\exceptions\PedidoCanceladoException;
 use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoNaoExcluidoException;
+use src\exceptions\WebhookReadErrorException;
 use src\models\Deal;
 use src\models\Homologacao_invoicing;
 use src\models\Homologacao_order;
@@ -20,12 +21,18 @@ use src\models\User;
 
 class OmieOrderHandler
 {
+    private $current;
+
+    public function __construct() {
+        $date = date('d/m/Y H:i:s');
+        $this->current = $date;
+    }
    
 
-    public static function newOmieOrder($json, $apiKey, $baseApi){
+    public static function newOmieOrder($json, $apiKey, $baseApi, OmieOrderHandler $instance){
 
         
-        $current = date('d/m/Y H:i:s');
+        $current = $instance->current;
         $message = [];
         
         //decodifica o json de pedidos vindos do webhook
@@ -148,10 +155,10 @@ class OmieOrderHandler
         return $message;
     }
 
-    public static function deletedOrder($json, $apiKey, $baseApi)
+    public static function deletedOrder($json, $apiKey, $baseApi, OmieOrderHandler $instance)
     {   
         
-        $current = date('d/m/Y H:i:s');
+        $current = $instance->current;
         $message = [];
         $decoded = json_decode($json,true);
 
@@ -340,6 +347,69 @@ class OmieOrderHandler
 
 
         return $message;
+    }
+
+    public static function alterOrderStage($json, $apiKey, $baseApi, OmieOrderHandler $instance){
+      
+        $current = $instance->current;
+        $message = [];
+
+        $decoded =json_decode($json, true);
+        
+        if($decoded['topic'] !== 'VendaProduto.EtapaAlterada'){
+            throw new WebhookReadErrorException('Não havia mudança de etapa no webhook - '.$current, 1040);
+        }
+
+        switch($decoded['appKey']){
+            case 2337978328686: //MHL
+                $appSecret = $_ENV['SECRETS_MHL'];
+                break;
+
+            case 2335095664902: // MPR
+                $appSecret = $_ENV['SECRETS_MPR']; 
+                break;
+
+            case 2597402735928: // MSC
+                $appSecret = $_ENV['SECRETS_MSC'];
+                break;
+        }
+
+        //busca o cnpj do cliente através do id do omie
+        $cnpjClient = (InvoiceHandler::clienteIdOmie($decoded['event']['idCliente'], $decoded['appKey'], $appSecret));
+        //busca o contact id do cliente no P`loomes CRM através do cnpj do cliente no Omie ERP
+        $contactId = InvoiceHandler::consultaClientePloomesCnpj($cnpjClient,$baseApi, $method='GET', $apiKey);
+        //monta a mensadem para atualizar o card do ploomes
+        $msg=[
+            'ContactId' => $contactId,
+            'Content' => 'Etapa dp pedido ('.$decoded['event']['numeroPedido'].') ALTERADA no Omie ERP para '.$decoded['event']['etapaDescr'].' em: '.$current,
+            'Title' => 'Etapa do pedido ALTERADA no Omie ERP'
+        ];
+        //cria uma interação no card
+        (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['order']['interactionMessage'] = 'Etapa do pedido alterada com sucesso!<br> Etapa do pedido ('.$decoded['event']['numeroPedido'].') foi alterada no Omie ERP para '.$decoded['event']['etapaDescr'].'! - '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível criar interação no Ploomes CRM ',1042);
+
+        if ($decoded['event']['etapa'] === '60' && !empty($decoded['event']['codIntPedido'])){
+            
+
+            $orderId = $decoded['event']['codIntPedido'];
+            $method = 'get';
+
+            $orderPloomes = DealHandler::requestOrder($orderId, $baseApi, $method, $apiKey);
+            if($orderPloomes[0]->Id == $orderId){
+                
+                $method = 'patch';
+                $stageId= ['StageId'=>40011765];
+                $stage = json_encode($stageId);
+                (InvoiceHandler::alterStageOrder($stage, $orderId, $baseApi, $method, $apiKey))?$message['order']['alterStagePloomes'] = 'Estágio do pedido de venda do Ploomes CRM alterado com sucesso! \n Id Pedido Ploomes: '.$orderPloomes[0]->Id.' \n Card Id: '.$orderPloomes[0]->DealId.' \n omieOrderHandler - '.$current : $message['order']['alterStagePloomes'] = 'Não foi possível mudar o estágio do pedido no Ploomes CRM. Pedido não foi encontrado no Ploomes CRM. - omieOrderHandler - '.$current;
+            }
+
+            $message['order']['alterStagePloomes'] = 'Não foi possível mudar o estágio da venda no Ploomes CRM, possívelmente o pedido foi criado direto no Omie ERP. - omieOrderHandler - '.$current;
+
+        }
+
+        $message['order']['alterStage'] = 'Integração de mudança de estágio de pedido de venda no omie ERP concluída com sucesso!  - '.$current;
+
+        return $message;
+
     }
     
 

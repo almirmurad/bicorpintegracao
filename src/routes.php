@@ -24,8 +24,11 @@ $router->post('/winDeal', 'DealController@winDeal');
 $router->post('/deletedDeal', 'DealController@deletedDeal');
 
 //Orders
-$router->post('/newOmieOrder', 'OrderController@newOmieOrder');
-$router->post('/deletedOrder', 'OrderController@deletedOrder');
+$router->post('/newOmieOrder', 'OrderController@newOmieOrder');//novo pedido no omie
+$router->post('/deletedOrder', 'OrderController@deletedOrder');//Pedido deletado no omie
+$router->post('/alterOrderStage', 'OrderController@alterOrderStage');//Pedido Alterado no kanban de vendas de produtos do omie
+
+
 
 //Invoices NFE
 $router->post('/invoiceIssue', 'InvoicingController@invoiceIssue');

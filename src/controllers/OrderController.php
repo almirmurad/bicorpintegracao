@@ -9,6 +9,7 @@ use src\exceptions\PedidoCanceladoException;
 use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoNaoExcluidoException;
+use src\exceptions\WebhookReadErrorException;
 use src\handlers\LoginHandler;
 use src\handlers\OmieOrderHandler;
 
@@ -17,6 +18,7 @@ class OrderController extends Controller {
     private $loggedUser;
     private $apiKey;
     private $baseApi;
+    private $omieOrderHandler;
 
     public function __construct()
     {
@@ -28,6 +30,7 @@ class OrderController extends Controller {
         }
         $this->apiKey = $_ENV['API_KEY'];
         $this->baseApi = $_ENV['BASE_API'];
+        $this->omieOrderHandler = new OmieOrderHandler;
    
     }
 
@@ -53,7 +56,7 @@ class OrderController extends Controller {
 
         try{
 
-            $response = json_encode(OmieOrderHandler::newOmieOrder($json, $this->apiKey, $this->baseApi));
+            $response = json_encode(OmieOrderHandler::newOmieOrder($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler ));
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -146,6 +149,52 @@ class OrderController extends Controller {
             exit;
         }
 
+
+    }
+
+    public function alterOrderStage(){
+        $json = file_get_contents('php://input');
+            //$decoded = json_decode($json, true);
+
+            ob_start();
+            var_dump($json);
+            $input = ob_get_contents();
+            ob_end_clean();
+
+            file_put_contents('./assets/whkAlterStageOrder.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
+            // $pong = array("pong"=>true);
+            // $json = json_encode($pong);
+            // return print_r($json);
+
+        try{
+            $response = json_encode(OmieOrderHandler::alterOrderStage($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler));
+            if ($response) {
+                echo"<pre>";
+                json_encode($response);
+                //grava log
+                //$decoded = json_decode($response, true);
+                ob_start();
+                var_dump($response);
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
+            }
+
+        }catch(WebhookReadErrorException $e){
+            echo $e->getMessage();
+        }catch(InteracaoNaoAdicionadaException $e){
+            echo $e->getMessage();
+        }finally{
+            if (isset($e)){
+                ob_start();
+                echo $e->getMessage();
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+            }
+        }
+        return print_r($response);
+        exit;
 
     }
 
