@@ -29,6 +29,10 @@ $router->post('/deletedOrder', 'OrderController@deletedOrder');//Pedido deletado
 $router->post('/alterOrderStage', 'OrderController@alterOrderStage');//Pedido Alterado no kanban de vendas de produtos do omie
 
 
+//clientes
+$router->post('/newClientPloomes', 'ClientPloomesController@newClientPloomes');//Novo cliente no ploomes
+
+
 
 //Invoices NFE
 $router->post('/invoiceIssue', 'InvoicingController@invoiceIssue');

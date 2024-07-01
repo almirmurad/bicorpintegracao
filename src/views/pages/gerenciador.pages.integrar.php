@@ -36,7 +36,7 @@
                         <div class="campo">
                             <label class="form-lbl" for="entityId">Entidade</label>
                             <select class="form-cmps" name="entityId" id="entityId">
-                                <option value="1" disabled>Cliente</option>
+                                <option value="1">Cliente</option>
                                 <option value="2">Negócio</option>
                                 <option value="12" disabled>Tarefa</option>
                             </select>
@@ -44,10 +44,12 @@
                         <div class="campo">
                         <label class="form-lbl" for="actionId">Ação</label>
                             <select class="form-cmps" name="actionId" id="actionId">
-                                <option value="4">Ganho</option>
-                                <option value="5">perdido</option>
-                                <option value="6">Reaberto</option>
-                                <option value="3">Excluído</option>
+                                <option value="1">Criar</option>
+                                <option value="2">Atualizar</option>
+                                <option value="3">Excluir</option>
+                                <option value="4">Ganhar</option>
+                                <option value="5">Perder</option>
+                                <option value="6">Reabrir</option>
                             </select>
                         </div>
                         <div class="campo">

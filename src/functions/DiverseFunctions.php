@@ -508,4 +508,39 @@ class DiverseFunctions{
         return $html;
     }
 
+    public static function calculaParcelas($dataInicio,$totalParcelas,$totalPedido)
+    {
+        
+        $intervalo = explode('/',$totalParcelas);
+        $nParcelas = count($intervalo);
+        $valorParcela = round($totalPedido / $nParcelas,2);
+        $percentual = round(($valorParcela / $totalPedido)*100,2);
+        $somaParcelas = 0;
+        $somaPercentuais = 0;
+       
+        for ($i = 0; $i < $nParcelas; $i++) {
+            
+            $somaPercentuais += $percentual;
+            $somaParcelas += $valorParcela;
+            $dataVencimento = date('d/m/Y',strtotime("+ $intervalo[$i] day", strtotime($dataInicio)));
+            
+            $parcela[] = [
+                "data_vencimento" => $dataVencimento,
+                "numero_parcela" => $i + 1,
+                "percentual" => $percentual,
+                "valor" => $valorParcela,
+            ];
+            
+        }
+        // Ajustar o primeiro percentual para garantir que a soma seja 100%
+        $diferenca = 100 - $somaPercentuais;
+        $parcela[0]['percentual'] += $diferenca;
+        // Ajustar o primeiro valor parcela para garantir que a soma das parcelas seja o total do pedido
+        $diferencaParcela = $totalPedido - $somaParcelas;
+        $parcela[0]['valor'] += $diferencaParcela;
+
+        return $parcela;
+    
+    }
+
 }

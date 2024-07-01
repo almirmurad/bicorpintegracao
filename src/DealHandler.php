@@ -42,13 +42,7 @@ class DealHandler
             //salva o hook no banco
             $idWebhook = Self::saveWebhook($webhook);
             $message['webhookMessage'] ='Novo webhook criado id = '.$webhook->webhookId . ' em: '. $current;
-            /************************************************************
-            *                   Other Properties                        *
-            *                                                           *
-            * No webhook do Card pegamos os campos de Other Properies   *
-            * para encontrar a chave da base de faturamento do Omie     *
-            *                                                           *
-            *************************************************************/
+            //other Properties
             $prop = [];
             foreach ($decoded['New']['OtherProperties'] as $key => $op) {
                 $prop[$key] = $op;
@@ -130,14 +124,7 @@ class DealHandler
             $deal->publicFormIdCreate = $decoded['New']['PublicFormIdCreate']; // Id do formulário externo de criação
             $deal->publicFormIdUpdate = $decoded['New']['PublicFormIdUpdate']; // Id do formulário externo de atualização
             $deal->webhookId = $webhook->webhookId; //inclui o id do webhook no deal
-
-            /**************************************************** 
-            *        Encontra a base de faturamento             *
-            *                                                   *
-            * NO webhook do Card pegamos os dados do checklist  * 
-            * para encontrar a base de faturamento do Omie      *
-            *                                                   *
-            *****************************************************/
+            //Encontra a base de faturamento
             switch ($deal->baseFaturamento) {
                 case 404096111:
                     $deal->baseFaturamentoTitle = 'Manos PR';
@@ -160,18 +147,15 @@ class DealHandler
                     $appKey = $_ENV['APPK_MHL'];
                     break;
             }
-            /**************************************************** 
-            *        busca dados da venda no ploomes            *
-            *                                                   *
-            * Na venda encontramos o array de itens da venda    * 
-            * Montamos o det (array de items da venda no omie)  *
-            *                                                   *
-            *****************************************************/
+            //busca a venda no ploomes
             (!empty($arrayRequestOrder = Self::requestOrder($deal->lastOrderId, $baseApi, $method, $apiKey))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes. Card id: '.$deal->id.' em: '.$current,1004 );
+            // print_r($arrayRequestOrder);
+            // exit;
             //array de produtos da venda
             $productsRequestOrder = $arrayRequestOrder[0]->Products;
-            //Array de detalhes do item da venda
+            
             $det = [];
+           
             $productsOrder = [];
             foreach ($productsRequestOrder as $prdItem) { 
                 
@@ -189,45 +173,14 @@ class DealHandler
 
                 $productsOrder[] = $det;
             }
-            /****************************************************************
-            *                          Request Quote                        *
-            *                                                               *
-            * Busca os dados da proposta (quote) para pegar a observação    *
-            * e o parcelamento escolhido em campos personalizados do ploomes*
-            *                                                               *
-            *****************************************************************/
-            $quote = Self::requestQuote($deal->lastQuoteId, $baseApi, $method, $apiKey);
             //busca Observação da Proposta (Quote)
-            ($notes = strip_tags($quote['value'][0]['Notes']))? $notes : $notes='Venda à Vista!';
-            //busca Parcelamento na Proposta (Quote)
-            $texto = $quote['value'][0]['OtherProperties'][0]['ObjectValueName'];
-            //verifica se exixtema parcelas ou se é a vista
-            if($texto !== "a vista" ){
-                $parcelamento = $texto;
-            }else{
-                $parcelamento = 0;
-            }
-            //installments é o parcelamento padrão do ploomes
-            //print_r(count($quote['value'][0]['Installments']));
-
+            ($notes = strip_tags(Self::requestQuote($deal->lastQuoteId, $baseApi, $method, $apiKey)))? $notes : $notes='Venda à Vista!';
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
             (!empty($idClienteOmie = Self::clienteIdOmie($contactCnpj, $appKey, $appSecret))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1006);
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
             (!empty($codVendedorOmie = Self::vendedorIdOmie($mailVendedor, $appKey, $appSecret))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1007);
             //inclui o pedido no omie
-
-            /****************************************************************
-            *                     Cria Pedido no Omie                       *
-            *                                                               *
-            * Cria um pedido de venda no omie. Obrigatório enviar:          *
-            * chave app do omie, chave secreta do omie, id do cliente omie, *
-            * data de previsão(finish date), id pedido integração (id pedido* 
-            * no ploomes), array de produtos($prodcutsOrder), numero conta  *    
-            * corrente do Omie ($ncc), id do vendedor omie($codVendedorOmie)*
-            * Total do pedido e Array de parcelamento                       *
-            *                                                               *
-            *****************************************************************/
-            $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes, $arrayRequestOrder, $parcelamento  );
+            $incluiPedidoOmie = Self::criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $deal->finishDate, $deal->lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes);
             //verifica se criou o pedido no omie
             if ($incluiPedidoOmie) {
                 //se no pedido existir faulstring, então deu erro na inclusão
@@ -289,143 +242,67 @@ class DealHandler
     }
 
     //CRIA PEDIDO NO OMIE
-    public static function criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $finishDate, $lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes, $arrayRequestOrder, $parcelamento)
+    public static function criaPedidoOmie($appKey, $appSecret, $idClienteOmie, $finishDate, $lastOrderId, $productsOrder, $ncc, $codVendedorOmie, $notes)
     {   
-        //$det = [];//informações dos produtos da venda(array de arrays)
-        //$ide=[];//array de informações do produto vai dentro do array det com por exemplo codigo_item_integracao(codigo do item no ploomes)
-        //$produto = [];//array de informações do produto específico, codigo quantidade valor unitário. infos do item no omie. dentro de det
-        //$parcela = []; //info de cada parcela individualmente data_vencimento, numero_parcela, percentual, valor (array de arrays) vai dentro de lista_parcelas
-        
-        // cabeçalho da requisição ($appKey,$appSecret, call(metodo))
-        $top = [
-            'app_key' =>   $appKey,
+
+        $jsonOmie = [
+            'app_key' => $appKey,
             'app_secret' => $appSecret,
             'call' => 'IncluirPedido',
-            'param'=>[],
+            'param' => [
+                [
+                    'cabecalho' => [
+                        'codigo_cliente' => $idClienteOmie, //Id do cliente do Omie retornado da função que busca no omie pelo cnpj
+                        'data_previsao' => DiverseFunctions::convertDate($finishDate), //obrigatorio
+                        'codigo_pedido_integracao' =>$lastOrderId, //codigo que busca pela integração específica
+                        'numero_pedido' => $lastOrderId,
+                        'origem_pedido' => 'API',
+                        'etapa' => '10', //obrigatorio
+                        //'qtde_parcela'=>2
+                        //'codigo_parcela' =>'999' aceita parcelas customizadas precisa indicar junto ao fim estrutura 'lista_parcela' e a tag qtde_parcela
+                    ],
+                    'det'=>$productsOrder,
+                    // 'det' => [
+                    //     [
+                    //         'ide' => [
+                    //             'codigo_item_integracao' => $productsOrder['id_item'],//codigo do item da integração específica
+                    //         ],
+                    //         'produto' => $productsOrder,//integrado pelo codigo_produto_integracao deve ser igual ao id do ploomes porém é diferente pra cada base no omie
+                    //     ]
+                    // ],
+                    'frete' => [
+                        'modalidade' => '9',
+                    ],
+                    'informacoes_adicionais' => [
+                        'codigo_conta_corrente' => $ncc,
+                        'codigo_categoria' => '1.01.01', //obrigatorio
+                        'numero_pedido_cliente'=>$lastOrderId,
+                        'codVend' => $codVendedorOmie,
+                    ],
+                    // 'lista_parcelas'=>[
+                    //     'parcela'=>[
+                    //         [
+                    //             'data_vencimento' => '26/04/2024',
+                    //             'numero_parcela' => 1,
+                    //             'percentual' => 50,
+                    //             'valor' => 100
+                    //         ],
+                    //         [
+                    //             'data_vencimento' => '09/09/2024',
+                    //             'numero_parcela' => 2,
+                    //             'percentual' => 50,
+                    //             'valor' => 100   
+                    //         ]
+                    //     ]
+                    //         ],
+                    'observacoes'=> [
+                        'obs_venda' => $notes,
+                    ]
+                ]
+            ],
         ];
-        
-        // cabecalho
-        $cabecalho = [];//cabeçalho do pedido (array)
-        $cabecalho['codigo_cliente'] = $idClienteOmie;//int
-        $cabecalho['codigo_pedido_integracao'] = $lastOrderId;//string
-        $cabecalho['data_previsao'] = DiverseFunctions::convertDate($finishDate);//string
-        $cabecalho['etapa'] = '10';//string
-        $cabecalho['numero_pedido'] = $lastOrderId;//string
-        $cabecalho['codigo_parcela'] = '999';//string
-        $cabecalho['origem_pedido'] = 'API';//string
-        //$cabecalho['quantidade_itens'] = 1;//int
-        // $cabecalho['codigo_cenario_impostos'] = 12315456498798;//int
-        
-        //ide primeiro pois vai dentro de det
-        // $ide['codigo_item_integracao'] = $productsOrder['id_item'];//codigo do item da integração específica;//string
-        
-        //produto antes pois vai dentro de det
-        // $produto['codigo_produto'] = 3342938591;
-        // $produto['quantidade'] = 1;//int
-        // $produto['valor_unitario'] = 200;
-        
-        //det array com ide e produto
-        // $det['ide'] = $ide;
-        // $det['produto'] = $produto;
-        
-        //frete
-        $frete = [];//array com infos do frete, por exemplo, modailidade;
-        $frete['modalidade'] = '9';//string
-        
-        
-        //informações adicionais
-        $informacoes_adicionais = []; //informações adicionais por exemplo codigo_categoria = 1.01.03, codigo_conta_corrente = 123456789
-        $informacoes_adicionais['codigo_categoria'] = '1.01.01';//string
-        $informacoes_adicionais['codigo_conta_corrente'] = $ncc;//int
-        // $informacoes_adicionais['consumidor_final'] = 'S';//string
-        // $informacoes_adicionais['enviar_email'] = 'N';//string
-        $informacoes_adicionais['numero_pedido_cliente']=$lastOrderId;
-        $informacoes_adicionais['codVend']=$codVendedorOmie;
-        
-        //lista parcelas
-        $lista_parcelas = [];//array de parcelas
-        $lista_parcelas['parcela'] = DiverseFunctions::calculaParcelas( date('d-m-Y'),$parcelamento, $arrayRequestOrder[0]->Amount);
-        
-        //observbacoes
-        $observacoes =[];
-        $observacoes['obs_venda'] = $notes;
-       
-        //exemplo de parcelsa
-        //$totalParcelas = "10/15/20";
-        $newPedido = [];//array que engloba tudo
-        $newPedido['cabecalho'] = $cabecalho;
-        $newPedido['det'] = $productsOrder;
-        $newPedido['frete'] = $frete;
-        $newPedido['informacoes_adicionais'] = $informacoes_adicionais;
-        $newPedido['lista_parcelas'] = $lista_parcelas;
-        $newPedido['observacoes'] = $observacoes;
-        $top['param'][]= $newPedido;
-
-        $jsonPedido = json_encode($top, JSON_UNESCAPED_UNICODE);
-        // echo'<pre>';
-        // print_r($jsonPedido);
-        // exit;
-
-        //aqui está o json original
-        // $jsonOmie = [
-        //     'app_key' => $appKey,
-        //     'app_secret' => $appSecret,
-        //     'call' => 'IncluirPedido',
-        //     'param' => [
-        //         [
-
-        //             'cabecalho' => [
-        //                 'codigo_cliente' => $idClienteOmie, //Id do cliente do Omie retornado da função que busca no omie pelo cnpj
-        //                 'data_previsao' => DiverseFunctions::convertDate($finishDate), //obrigatorio
-        //                 'codigo_pedido_integracao' =>$lastOrderId, //codigo que busca pela integração específica
-        //                 'numero_pedido' => $lastOrderId,
-        //                 'origem_pedido' => 'API',
-        //                 'etapa' => '10', //obrigatorio
-        //                 //'qtde_parcela'=>2
-        //                 //'codigo_parcela' =>'999' aceita parcelas customizadas precisa indicar junto ao fim estrutura 'lista_parcela' e a tag qtde_parcela
-        //             ],
-        //             'det'=>$productsOrder,
-        //             // 'det' => [
-        //             //     [
-        //             //         'ide' => [
-        //             //             'codigo_item_integracao' => $productsOrder['id_item'],//codigo do item da integração específica
-        //             //         ],
-        //             //         'produto' => $productsOrder,//integrado pelo codigo_produto_integracao deve ser igual ao id do ploomes porém é diferente pra cada base no omie
-        //             //     ]
-        //             // ],
-        //             'frete' => [
-        //                 'modalidade' => '9',
-        //             ],
-        //             'informacoes_adicionais' => [
-        //                 'codigo_conta_corrente' => $ncc,
-        //                 'codigo_categoria' => '1.01.01', //obrigatorio
-        //                 'numero_pedido_cliente'=>$lastOrderId,
-        //                 'codVend' => $codVendedorOmie,
-        //             ],
-        //             // 'lista_parcelas'=>[
-        //             //     'parcela'=>[
-        //             //         [
-        //             //             'data_vencimento' => '26/04/2024',
-        //             //             'numero_parcela' => 1,
-        //             //             'percentual' => 50,
-        //             //             'valor' => 100
-        //             //         ],
-        //             //         [
-        //             //             'data_vencimento' => '09/09/2024',
-        //             //             'numero_parcela' => 2,
-        //             //             'percentual' => 50,
-        //             //             'valor' => 100   
-        //             //         ]
-        //             //     ]
-        //             //         ],
-        //             'observacoes'=> [
-        //                 'obs_venda' => $notes,
-        //             ]
-        //         ]
-        //     ],
-        // ];
           
-       // $jsonOmie = json_encode($jsonOmie,JSON_UNESCAPED_UNICODE);
+        $jsonOmie = json_encode($jsonOmie,JSON_UNESCAPED_UNICODE);
 
         $curl = curl_init();
 
@@ -438,7 +315,7 @@ class DealHandler
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => $jsonPedido,
+            CURLOPT_POSTFIELDS => $jsonOmie,
             CURLOPT_HTTPHEADER => array(
                 'Content-Type: application/json'
             ),
@@ -530,7 +407,7 @@ class DealHandler
         /**
          * {{server}}/Orders?$filter=Id+eq+402118677&$expand=Products($select=Product,Quantity;$expand=Parts($expand=Product($select=Code),OtherProperties),Product($select=Code),)&$orderby=Id
          */
-        $query = 'Quotes?$expand=Installments,OtherProperties,Products($select=Id,Discount),Approvals($select=Id),ExternalComments($select=Id),Comments($select=Id),Template,Deal($expand=Pipeline($expand=Icon,Gender,WinButton,WinVerb,LoseButton,LoseVerb),Stage,Contact($expand=Phones;$select=Name,TypeId,Phones),Person($expand=Phones;$select=Name,TypeId,Phones),OtherProperties),Pages&$filter=Id+eq+'.$quoteId.'&preload=true';
+
         $headers = [
             'User-Key:' . $apiKey,
             'Content-Type: application/json',
@@ -539,7 +416,7 @@ class DealHandler
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => $baseApi . $query,
+            CURLOPT_URL => $baseApi . 'Quotes?$filter=Id+eq+'.$quoteId.'&$select=Notes',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -554,12 +431,10 @@ class DealHandler
         $response = curl_exec($curl);
 
         curl_close($curl);
-        $quote = json_decode($response, true);
-
-        return $quote;
-        // $notes = $notes['value'][0]['Notes'];
+        $notes = json_decode($response, true);
+        $notes = $notes['value'][0]['Notes'];
         
-        // return (empty($notes)) ? false: $notes;
+        return (empty($notes)) ? false: $notes;
 
     }
     //ENCONTRA O CNPJ DO CLIENTE NO PLOOMES
