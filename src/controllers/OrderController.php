@@ -108,7 +108,7 @@ class OrderController extends Controller {
 
         try{
 
-            $response = json_encode(OmieOrderHandler::deletedOrder($json, $this->apiKey, $this->baseApi));
+            $response = json_encode(OmieOrderHandler::deletedOrder($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler));
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
