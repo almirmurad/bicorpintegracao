@@ -15,17 +15,16 @@ use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
 use src\exceptions\VendedorInexistenteException;
 use src\models\Deal;
-
-
+use src\services\OmieServices;
+use src\services\PloomesServices;
 
 class DealController extends Controller {
     
     private $loggedUser;
     private $apiKey;
     private $baseApi;
-    // private $appKey;
-    // private $secrets;
-    // private $ncc;
+    private $ploomesService;
+    private $omieService;
 
     public function __construct()
     {
@@ -37,6 +36,8 @@ class DealController extends Controller {
         }
         $this->apiKey = $_ENV['API_KEY'];
         $this->baseApi = $_ENV['BASE_API'];
+        $this->ploomesService = new PloomesServices;
+        $this->omieService = new OmieServices;
         // $this->appKey = $_ENV['APP_KEY'];
         // $this->secrets = $_ENV['SECRETS_KEYS'];
         // $this->ncc = $_ENV['NUM_CC'];
@@ -62,14 +63,9 @@ class DealController extends Controller {
         ob_end_clean();
         file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
-        $apiKey = $this->apiKey;
-        $baseApi = $this->baseApi;
-        $method = 'GET';
-        // $appKey = $this->appKey;
-        // $secrets = $this->secrets;
-        // $ncc = $this->ncc;
         try{
-            $response = DealHandler::readDealHook($json, $baseApi, $method, $apiKey);
+            $response = new DealHandler($this->ploomesService, $this->omieService);
+            $response->readDealHook($json);
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -130,6 +126,12 @@ class DealController extends Controller {
     public function deletedDeal()
     {
         $json = file_get_contents('php://input');
+
+        ob_start();
+        var_dump($json);
+        $input = ob_get_contents();
+        ob_end_clean();
+        file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
         try{
             $response = DealHandler::deletedDealHook($json);

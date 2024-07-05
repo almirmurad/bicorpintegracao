@@ -101,7 +101,7 @@ class OrderController extends Controller {
             $input = ob_get_contents();
             ob_end_clean();
 
-            file_put_contents('./assets/whkDelOrder.log', $input . PHP_EOL, FILE_APPEND);
+            file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
             // $pong = array("pong"=>true);
             // $json = json_encode($pong);
             // return print_r($json);

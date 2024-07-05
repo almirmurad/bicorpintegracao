@@ -1,0 +1,15 @@
+<?php
+namespace src\contracts;
+
+interface PloomesManagerInterface{
+    //ENCONTRA A PROPOSTA NO PLOOMES
+    public function requestQuote(object $deal):array;
+    //ENCONTRA O CNPJ DO CLIENTE NO PLOOMES
+    public function contactCnpj(object $deal):string;
+    //ENCONTRA O EMAIL DO VENDEDOR NO PLOOMES
+    public function ownerMail(object $deal):string;
+    //encontra a venda no ploomes
+    public function requestOrder(object $deal):array;
+    //cria uma Interação no ploomes
+    public function createPloomesIteraction(string $json):bool;
+}
