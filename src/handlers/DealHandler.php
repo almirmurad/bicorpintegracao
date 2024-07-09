@@ -19,6 +19,7 @@ use src\models\Deal;
 use src\models\Webhook;
 use src\functions\DiverseFunctions;
 use src\models\Omie;
+use src\services\DatabaseServices;
 use src\services\OmieServices;
 use src\services\PloomesServices;
 
@@ -26,11 +27,13 @@ class DealHandler
 {
     private $ploomesServices;
     private $omieServices;
+    private $databaseServices;
 
-    public function __construct(PloomesServices $ploomesServices, OmieServices $omieServices)
+    public function __construct(PloomesServices $ploomesServices, OmieServices $omieServices, DatabaseServices $databaseServices)
     {
         $this->ploomesServices = $ploomesServices;
         $this->omieServices = $omieServices;
+        $this->databaseServices = $databaseServices;
     }
 
     //LÊ O WEBHOOK E CRIA O PEDIDO
@@ -51,8 +54,11 @@ class DealHandler
         
         if (isset($decoded['Action']) && $decoded['Action'] == "Win" && !empty($decoded['New']['LastOrderId'])) 
         {    
+            //cria objeto deal
+            $deal = new Deal();
             //salva o hook no banco
-            $idWebhook = Self::saveWebhook($webhook);
+            $idWebhookBd = Self::saveWebhook($webhook);
+            $deal->idWebhookBd = $idWebhookBd;
             $message['webhookMessage'] ='Novo webhook criado id = '.$webhook->webhookId . ' em: '. $current;
             /************************************************************
             *                   Other Properties                        *
@@ -65,8 +71,6 @@ class DealHandler
             foreach ($decoded['New']['OtherProperties'] as $key => $op) {
                 $prop[$key] = $op;
             }
-            //cria objeto deal
-            $deal = new Deal();
             //infos do Deal new
             //$deal->attachmentsItems = $decoded['New']['AttachmentsItems'];
             //$deal->collaboratingUsers = (isset($decoded['New']['CollaboratingUsers'][0]['UserId'])) ? $decoded['New']['CollaboratingUsers'][0]['UserId'] : 'Não definido'; // Usuários colaboradores
@@ -142,7 +146,7 @@ class DealHandler
             // $deal->publicFormIdCreate = $decoded['New']['PublicFormIdCreate']; // Id do formulário externo de criação
             // $deal->publicFormIdUpdate = $decoded['New']['PublicFormIdUpdate']; // Id do formulário externo de atualização
             $deal->webhookId = $webhook->webhookId; //inclui o id do webhook no deal
-
+            
             /**************************************************** 
             *        Encontra a base de faturamento             *
             *                                                   *
@@ -187,6 +191,8 @@ class DealHandler
 
             //array de produtos da venda
             $productsRequestOrder = $arrayRequestOrder['Products'];
+            // print_r($arrayRequestOrder);
+            // exit;
             //Array de detalhes do item da venda
             $det = [];
             $productsOrder = [];
@@ -195,10 +201,11 @@ class DealHandler
                 $det['ide'] = [];
                 $det['ide']['codigo_item_integracao'] = $prdItem['Id'];
                 $det['produto'] = [];
-                $idPrd = $prdItem['Product']['Code'];
+                $idPrd = $prdItem['Product']['OtherProperties'][0]['StringValue'];
+                
                 //encontra o id do produto no omie atraves do Code do ploomes
-                (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current,1005);
-                $det['produto']['codigo_produto'] = $idProductOmie;
+                //  (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current,1005);
+                $det['produto']['codigo_produto'] = $idPrd;//mudei aqui de $idproductOmie para $idPrd
                 $det['produto']['quantidade'] = $prdItem['Quantity'];
                 $det['produto']['tipo_desconto'] = 'P';
                 $det['produto']['valor_desconto'] = number_format($prdItem['Discount'], 2, ',', '.');
@@ -279,19 +286,22 @@ class DealHandler
     }
 
     //LÊ O WEBHOOK DE CARD EXCLUIDO
-    public static function deletedDealHook($json){
+    public function deletedDealHook($json)
+    {
+
         $current = date('d/m/Y H:i:s');
         $message = [];
 
         $decoded = json_decode($json, true);
         //verifica se o webhook é de card excluido
-        if($decoded['Action'] !== 'Delete' && $decoded['Deals']) {
+        if($decoded['Entity'] !== 'Deals' && $decoded['Action'] !== 'Delete'  ) {
             throw new WebhookReadErrorException('Não havia um card deletado no webhook - '.$current . PHP_EOL, 1010);
         }
         //Exclui o Deal da base de dados 
         try{
-            $delete = Deal::delete()->where('deal_id', $decoded['Old']['Id'])->execute();
-            $total = $delete->rowCount();
+            
+            $total = $this->databaseServices->deleteDeal($decoded['Old']['Id']);
+            
             ($total > 0)?
             $message ['deal']['deleted'] = 'Proposta (total = '.$total.') excluída da base de dados do sistema de integração - '.$current . PHP_EOL:$message ['deal']['notdeleted'] = 'Proposta não encontrada na base de dados da integração ou já foi deletada. - '.$current . PHP_EOL;
             
@@ -304,85 +314,6 @@ class DealHandler
         return $message;
 
     }
-    //SALVA NO BANCO DE DADOS AS INFORMAÇÕES DO WEBHOOK
-    public static function saveWebhook($webhook)
-    {   
 
-       $id = Webhook::insert(
-                    [
-                        'action'=>$webhook->action,
-                        'entity'=>$webhook->entity,
-                        'secondary_entity'=>$webhook->secondaryEntityId,
-                        'account_id'=>$webhook->accountId,
-                        'account_user_id'=>$webhook->actionUserId,
-                        'webhook_id'=>$webhook->webhookId,
-                        'webhook_creator_id'=>$webhook->webhookCreatorId,
-                        'created_at'=>date("Y-m-d H:i:s"),
-                     ]
-                )->execute();
-
-                if(empty($id)){
-                    return "Erro ao cadastrar webhook no banco de dados.";
-                }
-                return 'Id do cadastro do webhook no banco: '.$id;
-    }
-    //SALVA NO BANCO DE DADOS AS INFORMAÇÕES DO DEAL
-    public static function saveDeal($deal)
-    {
-
-        try{
-            $id = Deal::insert(
-                [
-                    'billing_basis'=>$deal->baseFaturamento,
-                    'billing_basis_title'=>$deal->baseFaturamentoTitle,
-                    'deal_id'=>$deal->id,
-                    'omie_order_id' => $deal->omieOrderId,
-                    'contact_id'=>$deal->contactId,
-                    'person_id'=>$deal->personId,
-                    'pipeline_id'=>$deal->pipelineId,
-                    'stage_id'=>$deal->stageId,
-                    'status_id'=>$deal->statusId,
-                    'won_quote_id'=>$deal->wonQuoteId,
-                    'create_date'=>$deal->createDate,
-                    'last_order_id'=>$deal->lastOrderId,
-                    'creator_id'=>$deal->creatorId,
-                    'webhook_id'=>$deal->webhookId,
-                    'created_at'=>date('Y-m-d H:i:s'),
-                 ]
-            )->execute();
-        }catch(PDOException $e){
-            // if ($e->getCode() == 2006) {
-            //     // Tentar reconectar
-            //     $id = Deal::insert(
-            //         [
-            //             'billing_basis'=>$deal->baseFaturamento,
-            //             'billing_basis_title'=>$deal->baseFaturamentoTitle,
-            //             'deal_id'=>$deal->id,
-            //             'omie_order_id' => $deal->omieOrderId,
-            //             'contact_id'=>$deal->contactId,
-            //             'person_id'=>$deal->personId,
-            //             'pipeline_id'=>$deal->pipelineId,
-            //             'stage_id'=>$deal->stageId,
-            //             'status_id'=>$deal->statusId,
-            //             'won_quote_id'=>$deal->wonQuoteId,
-            //             'create_date'=>$deal->createDate,
-            //             'last_order_id'=>$deal->lastOrderId,
-            //             'creator_id'=>$deal->creatorId,
-            //             'webhook_id'=>$deal->webhookId,
-            //             'created_at'=>date('Y-m-d H:i:s'),
-            //          ]
-            //     )->execute();
-                
-            // } else {
-            //     throw $e;
-            // }
-            print_r($e->getMessage());
-        }
-
-        if(empty($id)){
-            return "Erro ao cadastrar Venda no banco de dados.";
-        }
-        return $id;
-    }
     
 }

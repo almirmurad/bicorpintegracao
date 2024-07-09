@@ -4,7 +4,7 @@ namespace src\controllers;
 use \core\Controller;
 use src\handlers\LoginHandler;
 use src\handlers\PermissionHandler;
-use src\models\Deal;
+
 use src\models\Permissions_group;
 
 class PermissionController extends Controller {

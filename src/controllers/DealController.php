@@ -15,16 +15,16 @@ use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
 use src\exceptions\VendedorInexistenteException;
 use src\models\Deal;
+use src\services\DatabaseServices;
 use src\services\OmieServices;
 use src\services\PloomesServices;
 
 class DealController extends Controller {
     
     private $loggedUser;
-    private $apiKey;
-    private $baseApi;
-    private $ploomesService;
-    private $omieService;
+    private $ploomesServices;
+    private $omieServices;
+    private $databaseServices;
 
     public function __construct()
     {
@@ -34,16 +34,15 @@ class DealController extends Controller {
                 $this->redirect('/login');
             }
         }
-        $this->apiKey = $_ENV['API_KEY'];
-        $this->baseApi = $_ENV['BASE_API'];
-        $this->ploomesService = new PloomesServices;
-        $this->omieService = new OmieServices;
-        // $this->appKey = $_ENV['APP_KEY'];
-        // $this->secrets = $_ENV['SECRETS_KEYS'];
-        // $this->ncc = $_ENV['NUM_CC'];
+
+        $this->ploomesServices = new ploomesServices();
+        $this->omieServices = new omieServices();
+        $this->databaseServices = new DatabaseServices();
+
     }
 
-    public function index() {
+    public function index() 
+    {
         $total = Deal::select('id')->count();        
         $data = [
             'pagina' => 'Deals',
@@ -64,8 +63,10 @@ class DealController extends Controller {
         file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
         try{
-            $response = new DealHandler($this->ploomesService, $this->omieService);
-            $response->readDealHook($json);
+            
+            $dealHandler = new DealHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $dealHandler->readDealHook($json);
+
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -122,7 +123,6 @@ class DealController extends Controller {
         
     }
 
-
     public function deletedDeal()
     {
         $json = file_get_contents('php://input');
@@ -134,7 +134,9 @@ class DealController extends Controller {
         file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
         try{
-            $response = DealHandler::deletedDealHook($json);
+            $dealHandler = new DealHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $dealHandler->deletedDealHook($json);
+
             if ($response) {
                 echo"<pre>";
                 json_encode($response);

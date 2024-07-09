@@ -109,12 +109,13 @@ class PloomesServices implements PloomesManagerInterface{
     }
 
     //encontra a venda no ploomes
-    public function requestOrder(object $deal):array{
+    public function requestOrder(object $deal):array
+    {
 
         $curl = curl_init();
 
         curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->baseApi . 'Orders?$filter=Id+eq+' . $deal->lastOrderId . '&$expand=Products($select=Product,Discount,Quantity,Id,UnitPrice;$expand=Parts($expand=Product($select=Code),OtherProperties),Product($select=Code,Id),)&$orderby=Id',
+            CURLOPT_URL => $this->baseApi . 'Orders?$filter=Id+eq+' . $deal->lastOrderId . '&$expand=OtherProperties,Products($select=Product,Discount,Quantity,UnitPrice,Id;$expand=OtherProperties,Parts($expand=Product($select=Code,Id)),Product($expand=OtherProperties($filter=FieldId+eq+40232989)))',
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
@@ -135,7 +136,8 @@ class PloomesServices implements PloomesManagerInterface{
     }
 
     //CRIA INTERAÇÃO NO PLOOMES
-    public function createPloomesIteraction(string $json):bool{
+    public function createPloomesIteraction(string $json):bool
+    {
         
         //CHAMADA CURL PRA CRIAR WEBHOOK NO PLOOMES
         $curl = curl_init();
