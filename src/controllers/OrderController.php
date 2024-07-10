@@ -12,13 +12,18 @@ use src\exceptions\PedidoNaoExcluidoException;
 use src\exceptions\WebhookReadErrorException;
 use src\handlers\LoginHandler;
 use src\handlers\OmieOrderHandler;
+use src\services\DatabaseServices;
+use src\services\OmieServices;
+use src\services\PloomesServices;
 
 class OrderController extends Controller {
     
     private $loggedUser;
     private $apiKey;
     private $baseApi;
-    private $omieOrderHandler;
+    private $ploomesServices;
+    private $omieServices;
+    private $databaseServices;
 
     public function __construct()
     {
@@ -30,8 +35,10 @@ class OrderController extends Controller {
         }
         $this->apiKey = $_ENV['API_KEY'];
         $this->baseApi = $_ENV['BASE_API'];
-        $this->omieOrderHandler = new OmieOrderHandler;
-   
+
+        $this->ploomesServices = new PloomesServices();
+        $this->omieServices = new OmieServices();
+        $this->databaseServices = new DatabaseServices();
     }
 
     public function index() {
@@ -56,7 +63,9 @@ class OrderController extends Controller {
 
         try{
 
-            $response = json_encode(OmieOrderHandler::newOmieOrder($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler ));
+            $omieOrderHandler = new OmieOrderHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $omieOrderHandler->newOmieOrder($json);
+
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -108,7 +117,8 @@ class OrderController extends Controller {
 
         try{
 
-            $response = json_encode(OmieOrderHandler::deletedOrder($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler));
+            $omieOrderHandler = new OmieOrderHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $omieOrderHandler->deletedOrder($json);
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -162,12 +172,10 @@ class OrderController extends Controller {
             ob_end_clean();
 
             file_put_contents('./assets/whkAlterStageOrder.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
-            // $pong = array("pong"=>true);
-            // $json = json_encode($pong);
-            // return print_r($json);
 
         try{
-            $response = json_encode(OmieOrderHandler::alterOrderStage($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler));
+            $omieOrderHandler = new OmieOrderHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $omieOrderHandler->alterOrderStage($json);
             if ($response) {
                 echo"<pre>";
                 json_encode($response);

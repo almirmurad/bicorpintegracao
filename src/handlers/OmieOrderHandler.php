@@ -2,6 +2,7 @@
 
 namespace src\handlers;
 
+use core\Database;
 use PDOException;
 use src\exceptions\ContactIdInexistentePloomesCRM;
 use src\exceptions\InteracaoNaoAdicionadaException;
@@ -11,42 +12,44 @@ use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoNaoExcluidoException;
 use src\exceptions\WebhookReadErrorException;
-use src\models\Deal;
-use src\models\Homologacao_invoicing;
-use src\models\Homologacao_order;
-use src\models\Manospr_order;
-use src\models\Manossc_order;
-use src\models\Omieorder;
-use src\models\User;
+use src\services\DatabaseServices;
+use src\services\OmieServices;
+use src\services\PloomesServices;
+use stdClass;
 
 class OmieOrderHandler
 {
     private $current;
+    private $ploomesServices;
+    private $omieServices;
+    private $databaseServices;
 
-    public function __construct() {
+    public function __construct(PloomesServices $ploomesServices, OmieServices $omieServices, DatabaseServices $databaseServices) {
         $date = date('d/m/Y H:i:s');
         $this->current = $date;
+        $this->ploomesServices = $ploomesServices;
+        $this->omieServices = $omieServices;
+        $this->databaseServices = $databaseServices;
     }
    
 
-    public static function newOmieOrder($json, $apiKey, $baseApi, OmieOrderHandler $instance){
+    public function newOmieOrder(string $json):array{
 
-        
-        $current = $instance->current;
+        $current = $this->current;
         $message = [];
         
         //decodifica o json de pedidos vindos do webhook
-        $decoded = json_decode($json,true);
+        $decoded = json_decode($json, true);
 
         if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" ){
 
-
-
             switch($decoded['appKey']){
+
                 case 2337978328686:               
-                    $appSecret = $_ENV['SECRETS_MHL'];
                     // Monta o objeto de Order Homologação com os dados do webhook
-                    $order = new Homologacao_order();
+                    $order = new stdClass();
+                    $order->target = 'MHL';
+                    $order->appSecret = $_ENV['SECRETS_MHL'];
                     $order->idOmie = $decoded['event']['idPedido'];
                     $order->codCliente = $decoded['event']['idCliente'];
                     //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
@@ -60,7 +63,7 @@ class OmieOrderHandler
    
                     try{
 
-                        $id = HomologacaoOrderHandler::saveHomologacaoOrder($order);
+                        $id = $this->databaseServices->saveOrder($order);
                         $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Homologação, id '.$id.'em: '.$current;
                                                 
                     }catch(PDOException $e){
@@ -71,10 +74,10 @@ class OmieOrderHandler
                     break;
                     
                     case 2335095664902:
-
-                        $appSecret = $_ENV['SECRETS_MPR'];
                         // Monta o objeto de Order Homologação com os dados do webhook
-                        $order = new Manospr_order();
+                        $order = new stdClass();
+                        $order->target = 'MPR';
+                        $order->appSecret = $_ENV['SECRETS_MPR'];
                         $order->idOmie = $decoded['event']['idPedido'];
                         $order->codCliente = $decoded['event']['idCliente'];
                         //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
@@ -86,12 +89,9 @@ class OmieOrderHandler
                         //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
                         $order->appKey = $decoded['appKey'];
 
-                        
-
-                        
                         try{
                             
-                            $id = ManosPrOrderHandler::saveManosPrOrder($order);
+                            $id = $this->databaseServices->saveOrder($order);
                             $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
                            
         
@@ -103,9 +103,10 @@ class OmieOrderHandler
                     break;
                     
                 case 2597402735928:
-                    $appSecret = $_ENV['SECRETS_MSC'];
                     // Monta o objeto de Order Homologação com os dados do webhook
-                    $order = new Manossc_order();
+                    $order = new stdClass();
+                    $order->target = 'MSC';
+                    $order->appSecret = $_ENV['SECRETS_MSC'];
                     $order->idOmie = $decoded['event']['idPedido'];
                     $order->codCliente = $decoded['event']['idCliente'];
                     //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
@@ -119,7 +120,7 @@ class OmieOrderHandler
 
                     try{
 
-                        $id = ManosScOrderHandler::saveManosScOrder($order);
+                        $id = $this->databaseServices->saveOrder($order);
                         $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-SC id '.$id.'em: '.$current;
                        
         
@@ -130,13 +131,13 @@ class OmieOrderHandler
 
                     break;
                 }
-
+            
             
             //busca o cnpj do cliente através do id do omie
-            $cnpjClient = (InvoiceHandler::clienteIdOmie($order->codCliente, $order->appKey, $appSecret));
+            $cnpjClient = ($this->omieServices->clienteCnpjOmie($order));
             //busca o contactId do cliente no ploomes pelo cnpj
-            (!empty($contactId = InvoiceHandler::consultaClientePloomesCnpj($cnpjClient, $baseApi, $method='get', $apiKey)))?$contactId : throw new ContactIdInexistentePloomesCRM('Não foi Localizado no Ploomes CRM cliente cadastrado com o CNPJ: '.$cnpjClient.'',1505);
-            //monta a mensadem para atualizar o ploomes       
+            (!empty($contactId = $this->ploomesServices->consultaClientePloomesCnpj($cnpjClient)))?$contactId : throw new ContactIdInexistentePloomesCRM('Não foi Localizado no Ploomes CRM cliente cadastrado com o CNPJ: '.$cnpjClient.'',1505);
+            //monta a mensadem para atualizar o ploomes 
             $msg=[
                 'ContactId' => $contactId,
                 'Content' => 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.',
@@ -144,7 +145,7 @@ class OmieOrderHandler
             ];
 
             //cria uma interação no Ploomes
-            (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['order']['orderInteraction'] = 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.' : throw new InteracaoNaoAdicionadaException('Não foi possível enviar a mensagem de pedido criado manualmente no Omie ERP ao Ploomes CRM.',1010);
+            ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['order']['orderInteraction'] = 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.' : throw new InteracaoNaoAdicionadaException('Não foi possível enviar a mensagem de pedido criado manualmente no Omie ERP ao Ploomes CRM.',1010);
 
         }else{
             throw new OrderControllerException('<br> Havia um orçamento e não um pedido no webhook em '. $current, 1500);
@@ -155,12 +156,14 @@ class OmieOrderHandler
         return $message;
     }
 
-    public static function deletedOrder($json, $apiKey, $baseApi, OmieOrderHandler $instance)
+    public function deletedOrder($json)
     {   
         
-        $current = $instance->current;
+        $current = $this->current;
         $message = [];
-        $decoded = json_decode($json,true);
+        $decoded = json_decode($json, true);
+        $omie = new stdClass();
+        $omie->codCliente = $decoded['event']['idCliente'];
 
 
         if(($decoded['topic'] !== "VendaProduto.Cancelada" && isset($decoded['event']['cancelada']) && $decoded['event']['cancelada'] ="S") || $decoded['topic'] !== "VendaProduto.Excluida" && !isset($decoded['event']['cancelada'])  ){
@@ -170,10 +173,10 @@ class OmieOrderHandler
         switch($decoded['appKey'])
             {
                 case 2337978328686: //MHL
-                    $appSecret = $_ENV['SECRETS_MHL'];
-                  
+                    $omie->appSecret = $_ENV['SECRETS_MHL'];
+                    $omie->target = 'MHL';                 
                     try{
-                        $id = HomologacaoOrderHandler::isIssetOrder($decoded['event']['idPedido']);
+                        $id = $this->databaseServices->isIssetOrder($decoded['event']['idPedido'], $omie->target);
                         if(is_string($id)){
                             throw new PedidoInexistenteException('Erro ao consultar a base de dados de pedidos de Manos Homologação. Erro: '.$id. ' - '.$current, 1030);
                             }elseif(empty($id)){
@@ -188,7 +191,7 @@ class OmieOrderHandler
                     //exclui pedido da base de dados caso seja uma venda excluída
                     if($decoded['topic'] === "VendaProduto.Excluida"){
                         try{                           
-                            $message['order']['isdeleted'] = HomologacaoOrderHandler::excluiHomologacaoOrder($decoded['event']['idPedido']);
+                            $message['order']['isdeleted'] = $this->databaseServices->excluiOrder($decoded['event']['idPedido'], $omie->target);
 
                             if(is_string($message['order']['isdeleted'])){
                                 throw new PedidoNaoExcluidoException($message['order']['isdeleted']);
@@ -203,7 +206,7 @@ class OmieOrderHandler
                     //altera o pedido no banco para cancelado
                     try{
                         //Altera o pedido para cancelado no banco MHL
-                        $altera = HomologacaoOrderHandler::alterHomologacaoOrder($decoded['event']['idPedido']);
+                        $altera = $this->databaseServices->alterOrder($decoded['event']['idPedido'], $omie->target);
 
                         if(is_string($altera)){
                             throw new PedidoCanceladoException('Erro ao consultar a base de dados de Manos Homologação. Erro: '.$altera. ' - '.$current, 1030);                     
@@ -218,10 +221,10 @@ class OmieOrderHandler
                  break;
                     
                 case 2335095664902: // MPR
-                    $appSecret = $_ENV['SECRETS_MPR'];
-                    
+                    $omie->appSecret = $_ENV['SECRETS_MPR'];
+                    $omie->target = 'MPR';
                     try{
-                        $id = ManosPrOrderHandler::isIssetOrder($decoded['event']['idPedido']);
+                        $id = $this->databaseServices->isIssetOrder($decoded['event']['idPedido'], $omie->target);
                         if(is_string($id)){
                             throw new PedidoInexistenteException('Erro ao consultar a base de dados de pedidos de Manos-PR. Erro: '.$id. ' - '.$current, 1030);
                             }elseif(empty($id)){
@@ -236,7 +239,7 @@ class OmieOrderHandler
                     //exclui pedido da base de dados caso seja uma venda excluída
                     if($decoded['topic'] === "VendaProduto.Excluida"){
                         try{                           
-                            $message['order']['isdeleted'] = ManosPrOrderHandler::excluiManosPrOrder($decoded['event']['idPedido']);
+                            $message['order']['isdeleted'] = $this->databaseServices->excluiOrder($decoded['event']['idPedido'], $omie->target);
 
                             if(is_string($message['order']['isdeleted'])){
                                 throw new PedidoNaoExcluidoException($message['order']['isdeleted']);
@@ -251,7 +254,7 @@ class OmieOrderHandler
                     //altera o pedido no banco para cancelado
                     try{
                         //Altera o pedido para cancelado no banco MPR
-                        $altera = ManosPrOrderHandler::alterManosPrOrder($decoded['event']['idPedido']);
+                        $altera = $this->databaseServices->alterOrder($decoded['event']['idPedido'], $omie->target);
 
                         if(is_string($altera)){
                             throw new PedidoCanceladoException('Erro ao consultar a base de dados de Manos-PR. Erro: '.$altera. 'em '.$current, 1030);                     
@@ -266,10 +269,10 @@ class OmieOrderHandler
                 break;
                     
                 case 2597402735928: // MSC
-                    $appSecret = $_ENV['SECRETS_MSC'];
-                    
+                    $omie->appSecret = $_ENV['SECRETS_MSC'];
+                    $omie->target = 'MSC';
                     try{
-                        $id = ManosScOrderHandler::isIssetOrder($decoded['event']['idPedido']);
+                        $id = $this->databaseServices->isIssetOrder($decoded['event']['idPedido'], $omie->target);
                         if(is_string($id)){
                             throw new PedidoInexistenteException('Erro ao consultar a base de dados de pedidos de Manos-SC. Erro: '.$id. ' - '.$current, 1030);
                             }elseif(empty($id)){
@@ -284,7 +287,7 @@ class OmieOrderHandler
                     //exclui pedido da base de dados caso seja uma venda excluída
                     if($decoded['topic'] === "VendaProduto.Excluida"){
                         try{                           
-                            $message['order']['isdeleted'] = ManosScOrderHandler::excluiManosScOrder($decoded['event']['idPedido']);
+                            $message['order']['isdeleted'] = $this->databaseServices->excluiOrder($decoded['event']['idPedido'], $omie->target);
 
                             if(is_string($message['order']['isdeleted'])){
                                 throw new PedidoNaoExcluidoException($message['order']['isdeleted']);
@@ -299,7 +302,7 @@ class OmieOrderHandler
                     //altera o pedido no banco para cancelado
                     try{
                         //Altera o pedido para cancelado no banco MPR
-                        $altera = ManosScOrderHandler::alterManosScOrder($decoded['event']['idPedido']);
+                        $altera = $this->databaseServices->alterOrder($decoded['event']['idPedido'], $omie->target);
 
                         if(is_string($altera)){
                             throw new PedidoCanceladoException('Erro ao consultar a base de dados de Manos-SC. Erro: '.$altera. 'em '.$current, 1030);                     
@@ -312,49 +315,42 @@ class OmieOrderHandler
                     }
                     
                 break;
-            
             }
 
             //busca o cnpj do cliente através do id do omie
-            $cnpjClient = (InvoiceHandler::clienteIdOmie($decoded['event']['idCliente'], $decoded['appKey'], $appSecret));
+            $cnpjClient = ($this->omieServices->clienteCnpjOmie($omie));
             //busca o contact id do cliente no P`loomes CRM através do cnpj do cliente no Omie ERP
-            $contactId = InvoiceHandler::consultaClientePloomesCnpj($cnpjClient,$baseApi, $method='GET', $apiKey);
+            $contactId = $this->ploomesServices->consultaClientePloomesCnpj($cnpjClient);
             //monta a mensadem para atualizar o card do ploomes
             if($message['order']['isdeleted']){
                 $msg=[
-                    'ContactId' => $contactId,
-                    'Content' => 'Pedido ('.$decoded['event']['numeroPedido'].') EXCLUÍDO no Omie ERP em: '.$current,
-                    'Title' => 'Pedido EXCLUIDO no Omie ERP'
-                ];
-
+                        'ContactId' => $contactId,
+                        'Content' => 'Pedido ('.$decoded['event']['numeroPedido'].') EXCLUÍDO no Omie ERP em: '.$current,
+                        'Title' => 'Pedido EXCLUIDO no Omie ERP'
+                    ];
                 $message['order']['deleted'] = "Pedido excluído no Omie ERP e na base de dados do sistema!";
-    
             }else{
-
                 $msg=[
-                    'ContactId' => $contactId,
-                    'Content' => 'Pedido ('.$decoded['event']['numeroPedido'].') cancelado no Omie ERP em: '.$current,
-                    'Title' => 'Pedido Cancelado no Omie ERP'
-                ];
-                
+                        'ContactId' => $contactId,
+                        'Content' => 'Pedido ('.$decoded['event']['numeroPedido'].') cancelado no Omie ERP em: '.$current,
+                        'Title' => 'Pedido Cancelado no Omie ERP'
+                    ];
                 $message['order']['deleted'] = "Pedido excluído no Omie ERP e na base de dados do sistema!";
-
             }
+
             //cria uma interação no card
-            (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['interactionMessage'] = 'Integração de cancelamento/exclusão de Pedido concluída com sucesso!<br> Pedido ('.$decoded['event']['numeroPedido'].') foi cancelado/excluído no Omie ERP, no sistema de integração e interação criada no cliente id: '.$contactId.' - '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem de nota cancelada no Ploomes CRM',1032);
-
-
-
+            ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['interactionMessage'] = 'Integração de cancelamento/exclusão de Pedido concluída com sucesso!<br> Pedido ('.$decoded['event']['numeroPedido'].') foi cancelado/excluído no Omie ERP, no sistema de integração e interação criada no cliente id: '.$contactId.' - '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem de nota cancelada no Ploomes CRM',1032);
 
         return $message;
     }
 
-    public static function alterOrderStage($json, $apiKey, $baseApi, OmieOrderHandler $instance){
+    public function alterOrderStage($json){
       
-        $current = $instance->current;
+        $current = $this->current;
         $message = [];
-
         $decoded =json_decode($json, true);
+        $omie = new stdClass();
+        $omie->codCliente = $decoded['event']['idCliente'];
         
         if($decoded['topic'] !== 'VendaProduto.EtapaAlterada'){
             throw new WebhookReadErrorException('Não havia mudança de etapa no webhook - '.$current, 1040);
@@ -362,22 +358,22 @@ class OmieOrderHandler
 
         switch($decoded['appKey']){
             case 2337978328686: //MHL
-                $appSecret = $_ENV['SECRETS_MHL'];
+                $omie->appSecret = $_ENV['SECRETS_MHL'];
                 break;
 
             case 2335095664902: // MPR
-                $appSecret = $_ENV['SECRETS_MPR']; 
+                $omie->appSecret = $_ENV['SECRETS_MPR']; 
                 break;
 
             case 2597402735928: // MSC
-                $appSecret = $_ENV['SECRETS_MSC'];
+                $omie->appSecret = $_ENV['SECRETS_MSC'];
                 break;
         }
 
         //busca o cnpj do cliente através do id do omie
-        $cnpjClient = (InvoiceHandler::clienteIdOmie($decoded['event']['idCliente'], $decoded['appKey'], $appSecret));
+        $cnpjClient = ($this->omieServices->clienteCnpjOmie($omie));
         //busca o contact id do cliente no P`loomes CRM através do cnpj do cliente no Omie ERP
-        $contactId = InvoiceHandler::consultaClientePloomesCnpj($cnpjClient,$baseApi, $method='GET', $apiKey);
+        $contactId = $this->ploomesServices->consultaClientePloomesCnpj($cnpjClient);
         //monta a mensadem para atualizar o card do ploomes
         $msg=[
             'ContactId' => $contactId,
@@ -385,21 +381,19 @@ class OmieOrderHandler
             'Title' => 'Etapa do pedido ALTERADA no Omie ERP'
         ];
         //cria uma interação no card
-        (InteractionHandler::createPloomesIteraction(json_encode($msg), $baseApi, $apiKey))?$message['order']['interactionMessage'] = 'Etapa do pedido alterada com sucesso!<br> Etapa do pedido ('.$decoded['event']['numeroPedido'].') foi alterada no Omie ERP para '.$decoded['event']['etapaDescr'].'! - '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível criar interação no Ploomes CRM ',1042);
+        ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['order']['interactionMessage'] = 'Etapa do pedido alterada com sucesso!<br> Etapa do pedido ('.$decoded['event']['numeroPedido'].') foi alterada no Omie ERP para '.$decoded['event']['etapaDescr'].'! - '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível criar interação no Ploomes CRM ',1042);
 
         if ($decoded['event']['etapa'] === '60' && !empty($decoded['event']['codIntPedido'])){
             
 
             $orderId = $decoded['event']['codIntPedido'];
-            $method = 'get';
-
-            $orderPloomes = DealHandler::requestOrder($orderId, $baseApi, $method, $apiKey);
+            $omie->lastOrderId = $orderId;
+            $orderPloomes = $this->ploomesServices->requestOrder($orderId);
             if($orderPloomes[0]->Id == $orderId){
                 
-                $method = 'patch';
                 $stageId= ['StageId'=>40011765];
                 $stage = json_encode($stageId);
-                (InvoiceHandler::alterStageOrder($stage, $orderId, $baseApi, $method, $apiKey))?$message['order']['alterStagePloomes'] = 'Estágio do pedido de venda do Ploomes CRM alterado com sucesso! \n Id Pedido Ploomes: '.$orderPloomes[0]->Id.' \n Card Id: '.$orderPloomes[0]->DealId.' \n omieOrderHandler - '.$current : $message['order']['alterStagePloomes'] = 'Não foi possível mudar o estágio do pedido no Ploomes CRM. Pedido não foi encontrado no Ploomes CRM. - omieOrderHandler - '.$current;
+                ($this->ploomesServices->alterStageOrder($stage, $orderId))?$message['order']['alterStagePloomes'] = 'Estágio do pedido de venda do Ploomes CRM alterado com sucesso! \n Id Pedido Ploomes: '.$orderPloomes[0]->Id.' \n Card Id: '.$orderPloomes[0]->DealId.' \n omieOrderHandler - '.$current : $message['order']['alterStagePloomes'] = 'Não foi possível mudar o estágio do pedido no Ploomes CRM. Pedido não foi encontrado no Ploomes CRM. - omieOrderHandler - '.$current;
             }
 
             $message['order']['alterStagePloomes'] = 'Não foi possível mudar o estágio da venda no Ploomes CRM, possívelmente o pedido foi criado direto no Omie ERP. - omieOrderHandler - '.$current;

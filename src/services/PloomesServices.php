@@ -75,8 +75,8 @@ class PloomesServices implements PloomesManagerInterface{
 
         $responseCnpj = json_decode($responseCnpj, true);
 
-        $response = (!empty($responseCnpj['value'][0])) ? $responseCnpj['value'][0]['CNPJ'] : NULL;
-       
+        $response = (!empty($responseCnpj['value'][0]['CNPJ'])) ? $responseCnpj['value'][0]['CNPJ'] : $responseCnpj['value'][0]['CPF'];
+        
         return $response;
     }
 
@@ -162,6 +162,58 @@ class PloomesServices implements PloomesManagerInterface{
         curl_close($curl);
         return ($idIntegration !== null)?true:false;
        
+    }
+    //encontra cliente no ploomes pelo CNPJ
+    public function consultaClientePloomesCnpj(int $cnpj):int{
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->baseApi .'/Contacts?$filter=CNPJ+eq+'."'$cnpj'",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => strtoupper($this->method[0]),
+            CURLOPT_HTTPHEADER => $this->headers
+
+        ));
+
+        $response = curl_exec($curl);
+        $response =json_decode($response, true);
+        
+        curl_close($curl);
+
+        return $response['value'][0]['Id'];
+
+    }
+    //ALTERA O ESTÁGIO DA VENDA NO PLOOMES
+    public function alterStageOrder($stage, $orderId)
+    {
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->baseApi . 'Orders('.$orderId.')',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => strtoupper($this->method[2]),
+            CURLOPT_POSTFIELDS =>$stage,
+            CURLOPT_HTTPHEADER => $this->headers
+        ));
+
+        $response = curl_exec($curl);
+        $response =json_decode($response, true);
+        $stage = json_decode($stage,true);
+        curl_close($curl);
+
+       return ($response['value'][0]['StageId'] === $stage['StageId']) ? true :  false;
     }
 
 

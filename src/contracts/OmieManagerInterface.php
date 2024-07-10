@@ -10,4 +10,6 @@ interface OmieManagerInterface{
     public function buscaIdProductOmie(object $omie, string $idItem);
     //CRIA O PEDIDO NO OMIE 
     public function criaPedidoOmie(object $omie, string $idClienteOmie, object $deal, array $productsOrder, string $codVendedorOmie, string $notes, array $arrayRequestOrder, string $parcelamento);
+    //ENCONTRA O CNPJ DO CLIENTE NO OMIE
+    public function clienteCnpjOmie(object $omie):string;
 }

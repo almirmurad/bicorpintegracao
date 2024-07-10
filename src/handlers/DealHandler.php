@@ -57,7 +57,7 @@ class DealHandler
             //cria objeto deal
             $deal = new Deal();
             //salva o hook no banco
-            $idWebhookBd = Self::saveWebhook($webhook);
+            $idWebhookBd = $this->databaseServices->saveWebhook($webhook);
             $deal->idWebhookBd = $idWebhookBd;
             $message['webhookMessage'] ='Novo webhook criado id = '.$webhook->webhookId . ' em: '. $current;
             /************************************************************
@@ -239,7 +239,7 @@ class DealHandler
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
             (!empty($codVendedorOmie = $this->omieServices->vendedorIdOmie($omie, $mailVendedor))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1007);
             //inclui o pedido no omie
-
+            
             /****************************************************************
             *                     Cria Pedido no Omie                       *
             *                                                               *
