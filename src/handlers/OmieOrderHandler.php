@@ -2,7 +2,6 @@
 
 namespace src\handlers;
 
-use core\Database;
 use PDOException;
 use src\exceptions\ContactIdInexistentePloomesCRM;
 use src\exceptions\InteracaoNaoAdicionadaException;
@@ -164,19 +163,22 @@ class OmieOrderHandler
         $decoded = json_decode($json, true);
         $omie = new stdClass();
         $omie->codCliente = $decoded['event']['idCliente'];
-
+        $omie->appKey = $decoded['appKey'];
 
         if(($decoded['topic'] !== "VendaProduto.Cancelada" && isset($decoded['event']['cancelada']) && $decoded['event']['cancelada'] ="S") || $decoded['topic'] !== "VendaProduto.Excluida" && !isset($decoded['event']['cancelada'])  ){
             throw new OrderControllerException('Não havia um pedido cancelado ou excluido no webhook em '.$current);
         }
 
+        
+
         switch($decoded['appKey'])
             {
                 case 2337978328686: //MHL
                     $omie->appSecret = $_ENV['SECRETS_MHL'];
-                    $omie->target = 'MHL';                 
+                    $omie->target = 'MHL';       
                     try{
                         $id = $this->databaseServices->isIssetOrder($decoded['event']['idPedido'], $omie->target);
+
                         if(is_string($id)){
                             throw new PedidoInexistenteException('Erro ao consultar a base de dados de pedidos de Manos Homologação. Erro: '.$id. ' - '.$current, 1030);
                             }elseif(empty($id)){
@@ -317,6 +319,7 @@ class OmieOrderHandler
                 break;
             }
 
+            
             //busca o cnpj do cliente através do id do omie
             $cnpjClient = ($this->omieServices->clienteCnpjOmie($omie));
             //busca o contact id do cliente no P`loomes CRM através do cnpj do cliente no Omie ERP
@@ -351,6 +354,7 @@ class OmieOrderHandler
         $decoded =json_decode($json, true);
         $omie = new stdClass();
         $omie->codCliente = $decoded['event']['idCliente'];
+        $omie->appKey = $decoded['appKey'];
         
         if($decoded['topic'] !== 'VendaProduto.EtapaAlterada'){
             throw new WebhookReadErrorException('Não havia mudança de etapa no webhook - '.$current, 1040);

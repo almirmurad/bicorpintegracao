@@ -135,7 +135,7 @@ class DatabaseServices implements DatabaseManagerInterface{
         return ($id > 0 ) ? $id : false;
     }
     //VERIFICAR SE EXISTE A ORDEM NA BASE DE DADOS
-    public function isIssetOrder(int $orderNumber, string $target):int{
+    public function isIssetOrder(int $orderNumber, string $target){
 
         switch($target){
             case 'MHL':
@@ -153,8 +153,8 @@ class DatabaseServices implements DatabaseManagerInterface{
 
         $id = $database::select('id')
                 ->where('id_omie',$orderNumber)
-                ->execute();       
-        
+                ->one(); 
+
         return $id;
 
         }catch(PDOException $e){

@@ -96,7 +96,7 @@ class OrderController extends Controller {
                 exit; 
             }
             exit;
-            //return print_r($response);
+
         }
             
     }
@@ -116,9 +116,10 @@ class OrderController extends Controller {
             // return print_r($json);
 
         try{
-
+            
             $omieOrderHandler = new OmieOrderHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
             $response = $omieOrderHandler->deletedOrder($json);
+
             if ($response) {
                 echo"<pre>";
                 json_encode($response);
@@ -155,7 +156,6 @@ class OrderController extends Controller {
                 file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
                 exit; 
             }
-            return print_r($response);
             exit;
         }
 
