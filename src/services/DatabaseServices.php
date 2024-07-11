@@ -5,8 +5,11 @@ namespace src\services;
 use PDOException;
 use src\contracts\DatabaseManagerInterface;
 use src\models\Deal;
+use src\models\Homologacao_invoicing;
 use src\models\Homologacao_order;
+use src\models\Manospr_invoicing;
 use src\models\Manospr_order;
+use src\models\Manossc_invoicing;
 use src\models\Manossc_order;
 use src\models\Webhook;
 
@@ -91,6 +94,13 @@ class DatabaseServices implements DatabaseManagerInterface{
         }
         return $id;
     }
+    //BUSCA UM DEAL PELO LASTORDER ID
+    public function getDealByLastOrderId(int $idPedidoIntegracao)
+    {
+       $deal = Deal::select()->where('last_order_id', $idPedidoIntegracao)->one();
+      
+       return $deal;
+    }
     //deleta um deal da base de dados
     public function deleteDeal(int $id): int
     {
@@ -99,7 +109,6 @@ class DatabaseServices implements DatabaseManagerInterface{
 
         return $total;
     }
-
 
     //SALVA UMA ORDER NO BANCO DE DADOS
     public function saveOrder(object $order):int
@@ -218,4 +227,105 @@ class DatabaseServices implements DatabaseManagerInterface{
         
         return true;
     }
+
+    //SALVA A NOTA FISCAL NO BANCO DE DADOS
+    public function saveInvoicing(object $invoicing){
+
+        switch($invoicing->target){
+            case 'MHL':
+                $database = new Homologacao_invoicing();
+                break;
+            case 'MPR':
+                $database = new Manospr_invoicing();
+                break;
+            case 'MSC':
+                $database = new Manossc_invoicing();
+                break;
+        }
+
+        try{
+
+            $id = $database::insert(
+                [
+                    'stage'=>$invoicing->etapa,
+                    'invoicing_date'=>$invoicing->dataFaturado,
+                    'invoicing_time'=>$invoicing->horaFaturado,
+                    'client_id'=>$invoicing->idCliente,
+                    'order_id'=>$invoicing->idPedido,
+                    'invoice_number'=>$invoicing->nNF,
+                    'ord_number'=>$invoicing->numeroPedido,
+                    'order_amount'=>$invoicing->valorPedido,
+                    'user_id'=>$invoicing->authorId,
+                    'user_email'=>$invoicing->authorEmail,
+                    'user_name'=>$invoicing->authorName,
+                    'appkey'=>$invoicing->appKey,
+                    'created_at'=>date('Y-m-d H:i:s'),
+                 ]
+            )->execute();
+
+            return $id;
+
+        }catch(PDOException $e){
+            return 'Erro ao cadastrar Faturamenro no banco de dados! - '. $e->getMessage();
+        }
+        
+    }
+
+    public function isIssetInvoice(object $omie, int $orderNumber):int|string|null
+    {
+        switch($omie->target){
+            case 'MHL':
+                $database = new Homologacao_invoicing();
+                break;
+            case 'MPR':
+                $database = new Manospr_invoicing();
+                break;
+            case 'MSC':
+                $database = new Manossc_invoicing();
+                break;
+        }
+        try{
+
+            $id = $database::select('id')
+                    ->where('order_id',$orderNumber)
+                    ->where('is_canceled',0)
+                    ->one();       
+            return (!$id)?$id: $id['id'];
+                    
+        }catch(PDOException $e){
+            return $e->getMessage();
+        }
+
+    }
+
+    public function alterInvoice(object $omie, int $orderNumber):string|bool
+    {
+        switch($omie->target){
+            case 'MHL':
+                $database = new Homologacao_invoicing();
+                break;
+            case 'MPR':
+                $database = new Manospr_invoicing();
+                break;
+            case 'MSC':
+                $database = new Manossc_invoicing();
+                break;
+        }
+
+        try{
+
+            $database::update()
+                ->set('is_canceled', 1)
+                ->set('updated_at', date('Y-m-d H:i:s'))
+                ->where('order_id',$orderNumber)
+                ->execute();
+
+            return true;
+
+        }catch(PDOException $e){
+            return $e->getMessage();
+        }
+    }
+
+
 }

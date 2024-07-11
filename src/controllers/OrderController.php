@@ -19,8 +19,6 @@ use src\services\PloomesServices;
 class OrderController extends Controller {
     
     private $loggedUser;
-    private $apiKey;
-    private $baseApi;
     private $ploomesServices;
     private $omieServices;
     private $databaseServices;
@@ -33,8 +31,6 @@ class OrderController extends Controller {
                 $this->redirect('/login');
             }
         }
-        $this->apiKey = $_ENV['API_KEY'];
-        $this->baseApi = $_ENV['BASE_API'];
 
         $this->ploomesServices = new PloomesServices();
         $this->omieServices = new OmieServices();
@@ -116,10 +112,9 @@ class OrderController extends Controller {
             // return print_r($json);
 
         try{
-            
+
             $omieOrderHandler = new OmieOrderHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
             $response = $omieOrderHandler->deletedOrder($json);
-
             if ($response) {
                 echo"<pre>";
                 json_encode($response);

@@ -1,6 +1,8 @@
 <?php
 namespace src\contracts;
 
+use src\models\Omie;
+
 interface OmieManagerInterface{
     //BUSCA O ID DO CLIENTE OMIE
     public function clienteIdOmie(object $omie, string $contactCnpj);
@@ -11,5 +13,10 @@ interface OmieManagerInterface{
     //CRIA O PEDIDO NO OMIE 
     public function criaPedidoOmie(object $omie, string $idClienteOmie, object $deal, array $productsOrder, string $codVendedorOmie, string $notes, array $arrayRequestOrder, string $parcelamento);
     //ENCONTRA O CNPJ DO CLIENTE NO OMIE
-    public function clienteCnpjOmie(object $omie):string;
+    public function clienteCnpjOmie(object $omie);
+    //ENCONTRA O PEDIDO ATRAVÉS DO ID DO OMIE
+    public function consultaPedidoOmie(object $omie, int $idPedido);
+    //CONSULTA NOTA FISCAL NO OMIE
+    public function consultaNotaOmie(object $omie, int $idPedido );
+    
 }

@@ -15,17 +15,16 @@ use src\exceptions\PedidoNaoEncontradoOmieException;
 use src\handlers\LoginHandler;
 use src\handlers\InvoiceHandler;
 use src\models\Deal;
-
-
+use src\services\DatabaseServices;
+use src\services\OmieServices;
+use src\services\PloomesServices;
 
 class InvoicingController extends Controller {
     
     private $loggedUser;
-    private $apiKey;
-    private $baseApi;
-    // private $appKey;
-    // private $secrets;
-    // private $ncc;
+    private $ploomesServices;
+    private $omieServices;
+    private $databaseServices;
 
     public function __construct()
     {
@@ -35,11 +34,10 @@ class InvoicingController extends Controller {
                 $this->redirect('/login');
             }
         }
-        $this->apiKey = $_ENV['API_KEY'];
-        $this->baseApi = $_ENV['BASE_API'];
-        // $this->appKey = $_ENV['APP_KEY'];
-        // $this->secrets = $_ENV['SECRETS_KEYS'];
-        // $this->ncc = $_ENV['NUM_CC'];
+
+        $this->ploomesServices = new PloomesServices();
+        $this->omieServices = new OmieServices();
+        $this->databaseServices = new DatabaseServices();
     }
 
     public function index() {
@@ -62,14 +60,9 @@ class InvoicingController extends Controller {
         ob_end_clean();
         file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
-        $apiKey = $this->apiKey;
-        $baseApi = $this->baseApi;
-        $method = 'GET';
-        // $appKey = $this->appKey;
-        // $secrets = $this->secrets;
-        // $ncc = $this->ncc;
         try{
-            $response = InvoiceHandler::readInvoiceHook($json, $baseApi, $method, $apiKey);
+            $invoiceHandler = new InvoiceHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $invoiceHandler->readInvoiceHook($json);
             
             if ($response) {
                 echo"<pre>";
@@ -123,7 +116,7 @@ class InvoicingController extends Controller {
                 exit; 
             }
             exit;
-            //return print_r($response);
+
         }
         
     }
@@ -131,16 +124,11 @@ class InvoicingController extends Controller {
     public function deletedInvoice()
     {
 
-        $apiKey = $this->apiKey;
-        $baseApi = $this->baseApi;
-        $method = 'GET';
-        // $appKey = $this->appKey;
-        // $secrets = $this->secrets;
-        // $ncc = $this->ncc;
         $json = file_get_contents('php://input');
            
         try{
-            $response = InvoiceHandler::isDeletedInvoice($json, $baseApi, $method, $apiKey);
+            $invoiceHandler = new InvoiceHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $invoiceHandler->isDeletedInvoice($json);
             
             if ($response) {
                 echo"<pre>";

@@ -164,7 +164,7 @@ class PloomesServices implements PloomesManagerInterface{
        
     }
     //encontra cliente no ploomes pelo CNPJ
-    public function consultaClientePloomesCnpj(int $cnpj):int{
+    public function consultaClientePloomesCnpj(string $cnpj):string{
 
         $curl = curl_init();
 

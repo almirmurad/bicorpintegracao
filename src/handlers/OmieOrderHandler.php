@@ -32,7 +32,8 @@ class OmieOrderHandler
     }
    
 
-    public function newOmieOrder(string $json):array{
+    public function newOmieOrder(string $json):array
+    {
 
         $current = $this->current;
         $message = [];
@@ -347,7 +348,8 @@ class OmieOrderHandler
         return $message;
     }
 
-    public function alterOrderStage($json){
+    public function alterOrderStage($json)
+    {
       
         $current = $this->current;
         $message = [];
@@ -410,5 +412,4 @@ class OmieOrderHandler
 
     }
     
-
 }
