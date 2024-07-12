@@ -263,7 +263,7 @@ class DealHandler
                 if($incluiPedidoOmie->codigo_pedido){
                     //salva um deal no banco
                     $deal->omieOrderId = $incluiPedidoOmie->codigo_pedido;
-                    $dealCreatedId = Self::saveDeal($deal);   
+                    $dealCreatedId = $this->databaseServices->saveDeal($deal);   
                     $message['dealMessage'] ='Id do Deal no Banco de Dados: '.$dealCreatedId;  
                 }
                 //monta a mensadem para atualizar o card do ploomes

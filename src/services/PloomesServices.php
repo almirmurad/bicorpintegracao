@@ -138,7 +138,7 @@ class PloomesServices implements PloomesManagerInterface{
     //CRIA INTERAÇÃO NO PLOOMES
     public function createPloomesIteraction(string $json):bool
     {
-        
+
         //CHAMADA CURL PRA CRIAR WEBHOOK NO PLOOMES
         $curl = curl_init();
 
@@ -150,16 +150,16 @@ class PloomesServices implements PloomesManagerInterface{
             CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST =>$this->method[1],
+            CURLOPT_CUSTOMREQUEST =>strtoupper($this->method[1]),
             CURLOPT_POSTFIELDS => $json,
             CURLOPT_HTTPHEADER => $this->headers
         ));
 
-        $response = curl_exec($curl);
-        $decoded = json_decode($response, true);
-        $idIntegration = $decoded['value'][0]['Id']??Null;
-        
+        $response = json_decode(curl_exec($curl),true);
         curl_close($curl);
+
+        $idIntegration = $response['value'][0]['Id']??Null;
+
         return ($idIntegration !== null)?true:false;
        
     }

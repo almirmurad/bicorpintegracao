@@ -147,9 +147,6 @@ class OmieServices implements OmieManagerInterface{
             }
         }
         
-        // echo'<pre>';
-        // print_r($codigoVendedor);
-        // exit;
         return $codigoVendedor;
     }
 
@@ -273,9 +270,7 @@ class OmieServices implements OmieManagerInterface{
 
         $jsonPedido = json_encode($top, JSON_UNESCAPED_UNICODE);
         
-        // print_r($jsonPedido);
-        // exit;
-
+       
         //aqui está o json original
         // $jsonOmie = [
         //     'app_key' => $appKey,

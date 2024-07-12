@@ -4,11 +4,15 @@ namespace src\controllers;
 use \core\Controller;
 use src\handlers\InteractionHandler;
 use src\handlers\LoginHandler;
+use src\services\DatabaseServices;
+use src\services\OmieServices;
+use src\services\PloomesServices;
 
 class InteractionController extends Controller{
     private $loggedUser;
-    private $apiKey;
-    private $baseApi;
+    private $ploomesServices;
+    private $omieServices;
+    private $databaseServices;
 
     public function __construct()
     {
@@ -18,8 +22,9 @@ class InteractionController extends Controller{
                 $this->redirect('/login');
             }
         }
-        $this->apiKey = $_ENV['API_KEY'];
-        $this->baseApi = $_ENV['BASE_API'];
+        $this->ploomesServices = new PloomesServices();
+        $this->omieServices = new OmieServices();
+        $this->databaseServices = new DatabaseServices();
 
     }
 
@@ -41,10 +46,7 @@ class InteractionController extends Controller{
         ob_end_clean();
         file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
-        $apiKey = $this->apiKey;
-        $baseApi = $this->baseApi;
-
-        $response = InteractionHandler::createPloomesIteraction($json, $baseApi, $apiKey);
+        $response = $this->ploomesServices->createPloomesIteraction($json);
 
         if ($response) {
             echo"<pre>";
