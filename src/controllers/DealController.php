@@ -13,6 +13,7 @@ use src\exceptions\DealNaoExcluidoBDException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
+use src\exceptions\PropostaNaoEncontradaException;
 use src\exceptions\VendedorInexistenteException;
 use src\models\Deal;
 use src\services\DatabaseServices;
@@ -55,7 +56,6 @@ class DealController extends Controller {
     public function winDeal()
     {
         $json = file_get_contents('php://input');
-
         ob_start();
         var_dump($json);
         $input = ob_get_contents();
@@ -109,6 +109,9 @@ class DealController extends Controller {
             print $e->getMessage();
         }
         catch(PedidoRejeitadoException $e){
+            echo '<pre>';
+            print $e->getMessage();
+        }catch(PropostaNaoEncontradaException $e){
             echo '<pre>';
             print $e->getMessage();
         }

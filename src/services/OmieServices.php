@@ -210,6 +210,8 @@ class OmieServices implements OmieManagerInterface{
             'call' => 'IncluirPedido',
             'param'=>[],
         ];
+        // $parcelas = explode('/',$parcelamento);
+        // $qtdeParcelas = count($parcelas);
         
         // cabecalho
         $cabecalho = [];//cabeçalho do pedido (array)
@@ -218,10 +220,11 @@ class OmieServices implements OmieManagerInterface{
         $cabecalho['data_previsao'] = DiverseFunctions::convertDate($deal->finishDate);//string
         $cabecalho['etapa'] = '10';//string
         $cabecalho['numero_pedido'] = $deal->lastOrderId;//string
-        $cabecalho['codigo_parcela'] = '999';//string
+        $cabecalho['codigo_parcela'] = DiverseFunctions::getIdParcelamento($parcelamento);//string'qtde_parcela'=>2
+        //$cabecalho['qtde_parcelas'] = $qtdeParcelas;//string=>2
         $cabecalho['origem_pedido'] = 'API';//string
         //$cabecalho['quantidade_itens'] = 1;//int
-        // $cabecalho['codigo_cenario_impostos'] = 12315456498798;//int
+        //$cabecalho['codigo_cenario_impostos'] = 12315456498798;//int
         
         //ide primeiro pois vai dentro de det
         // $ide['codigo_item_integracao'] = $productsOrder['id_item'];//codigo do item da integração específica;//string
@@ -239,7 +242,6 @@ class OmieServices implements OmieManagerInterface{
         $frete = [];//array com infos do frete, por exemplo, modailidade;
         $frete['modalidade'] = '9';//string
         
-        
         //informações adicionais
         $informacoes_adicionais = []; //informações adicionais por exemplo codigo_categoria = 1.01.03, codigo_conta_corrente = 123456789
         $informacoes_adicionais['codigo_categoria'] = '1.01.01';//string
@@ -248,10 +250,12 @@ class OmieServices implements OmieManagerInterface{
         // $informacoes_adicionais['enviar_email'] = 'N';//string
         $informacoes_adicionais['numero_pedido_cliente']=$deal->lastOrderId;
         $informacoes_adicionais['codVend']=$codVendedorOmie;
-        
+        $informacoes_adicionais['numero_pedido_cliente']=$deal->lastOrderId;
+        //$informacoes_adicionais['codproj']=3683391891;
+
         //lista parcelas
-        $lista_parcelas = [];//array de parcelas
-        $lista_parcelas['parcela'] = DiverseFunctions::calculaParcelas( date('d-m-Y'),$parcelamento, $arrayRequestOrder['Amount']);
+        //$lista_parcelas = [];//array de parcelas
+        //$lista_parcelas['parcela'] = DiverseFunctions::calculaParcelas( date('d-m-Y'),$parcelamento, $arrayRequestOrder['Amount']);
         
         //observbacoes
         $observacoes =[];
@@ -264,72 +268,14 @@ class OmieServices implements OmieManagerInterface{
         $newPedido['det'] = $productsOrder;
         $newPedido['frete'] = $frete;
         $newPedido['informacoes_adicionais'] = $informacoes_adicionais;
-        $newPedido['lista_parcelas'] = $lista_parcelas;
+        //$newPedido['lista_parcelas'] = $lista_parcelas;
         $newPedido['observacoes'] = $observacoes;
         $top['param'][]= $newPedido;
 
         $jsonPedido = json_encode($top, JSON_UNESCAPED_UNICODE);
-        
-       
-        //aqui está o json original
-        // $jsonOmie = [
-        //     'app_key' => $appKey,
-        //     'app_secret' => $appSecret,
-        //     'call' => 'IncluirPedido',
-        //     'param' => [
-        //         [
+        print_r($jsonPedido);
+        exit;
 
-        //             'cabecalho' => [
-        //                 'codigo_cliente' => $idClienteOmie, //Id do cliente do Omie retornado da função que busca no omie pelo cnpj
-        //                 'data_previsao' => DiverseFunctions::convertDate($finishDate), //obrigatorio
-        //                 'codigo_pedido_integracao' =>$lastOrderId, //codigo que busca pela integração específica
-        //                 'numero_pedido' => $lastOrderId,
-        //                 'origem_pedido' => 'API',
-        //                 'etapa' => '10', //obrigatorio
-        //                 //'qtde_parcela'=>2
-        //                 //'codigo_parcela' =>'999' aceita parcelas customizadas precisa indicar junto ao fim estrutura 'lista_parcela' e a tag qtde_parcela
-        //             ],
-        //             'det'=>$productsOrder,
-        //             // 'det' => [
-        //             //     [
-        //             //         'ide' => [
-        //             //             'codigo_item_integracao' => $productsOrder['id_item'],//codigo do item da integração específica
-        //             //         ],
-        //             //         'produto' => $productsOrder,//integrado pelo codigo_produto_integracao deve ser igual ao id do ploomes porém é diferente pra cada base no omie
-        //             //     ]
-        //             // ],
-        //             'frete' => [
-        //                 'modalidade' => '9',
-        //             ],
-        //             'informacoes_adicionais' => [
-        //                 'codigo_conta_corrente' => $ncc,
-        //                 'codigo_categoria' => '1.01.01', //obrigatorio
-        //                 'numero_pedido_cliente'=>$lastOrderId,
-        //                 'codVend' => $codVendedorOmie,
-        //             ],
-        //             // 'lista_parcelas'=>[
-        //             //     'parcela'=>[
-        //             //         [
-        //             //             'data_vencimento' => '26/04/2024',
-        //             //             'numero_parcela' => 1,
-        //             //             'percentual' => 50,
-        //             //             'valor' => 100
-        //             //         ],
-        //             //         [
-        //             //             'data_vencimento' => '09/09/2024',
-        //             //             'numero_parcela' => 2,
-        //             //             'percentual' => 50,
-        //             //             'valor' => 100   
-        //             //         ]
-        //             //     ]
-        //             //         ],
-        //             'observacoes'=> [
-        //                 'obs_venda' => $notes,
-        //             ]
-        //         ]
-        //     ],
-        // ];
-            
         // $jsonOmie = json_encode($jsonOmie,JSON_UNESCAPED_UNICODE);
 
         $curl = curl_init();
@@ -357,7 +303,8 @@ class OmieServices implements OmieManagerInterface{
     }
 
     // busca o pedido através do Id do OMIE
-    public function consultaPedidoOmie(object $omie, int $idPedido){
+    public function consultaPedidoOmie(object $omie, int $idPedido)
+    {
 
         $array = [
                     'app_key'=>$omie->appKey,
@@ -398,7 +345,8 @@ class OmieServices implements OmieManagerInterface{
     } 
 
     //consulta nota fiscal no omie
-    public function consultaNotaOmie(object $omie, int $idPedido){
+    public function consultaNotaOmie(object $omie, int $idPedido)
+    {
         $array = [
             'app_key'=>$omie->appKey,
             'app_secret'=>$omie->appSecret,

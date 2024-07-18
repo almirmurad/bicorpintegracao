@@ -13,6 +13,7 @@ use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
+use src\exceptions\PropostaNaoEncontradaException;
 use src\exceptions\VendedorInexistenteException;
 use src\exceptions\WebhookReadErrorException;
 use src\models\Deal;
@@ -39,6 +40,7 @@ class DealHandler
     //LÊ O WEBHOOK E CRIA O PEDIDO
     public function readDealHook($json)
     {   
+       
         $current = date('d/m/Y H:i:s');
         $message = [];
         $decoded = json_decode($json, true);
@@ -199,17 +201,20 @@ class DealHandler
             foreach ($productsRequestOrder as $prdItem) { 
                 
                 $det['ide'] = [];
+                
                 $det['ide']['codigo_item_integracao'] = $prdItem['Id'];
                 $det['produto'] = [];
-                $idPrd = $prdItem['Product']['OtherProperties'][0]['StringValue'];
-                
-                //encontra o id do produto no omie atraves do Code do ploomes
-                //  (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current,1005);
-                $det['produto']['codigo_produto'] = $idPrd;//mudei aqui de $idproductOmie para $idPrd
+                $idPrd = $prdItem['Product']['Code'];              
+                //encontra o id do produto no omie atraves do Code do ploomes (é necessário pois cada base omie tem código diferente pra cada item)
+                (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current,1005);
+                $det['produto']['codigo_produto'] = $idProductOmie;//mudei aqui de $idproductOmie para $idPrd
                 $det['produto']['quantidade'] = $prdItem['Quantity'];
                 $det['produto']['tipo_desconto'] = 'P';
                 $det['produto']['valor_desconto'] = number_format($prdItem['Discount'], 2, ',', '.');
                 $det['produto']['valor_unitario'] = $prdItem['UnitPrice'];
+                $det['inf_adic'] = [];
+                $det['inf_adic']['numero_pedido_compra'] = '123456789';
+                $det['inf_adic']['item_pedido_compra'] = $idProductOmie;
 
                 $productsOrder[] = $det;
             }
@@ -220,8 +225,9 @@ class DealHandler
             * e o parcelamento escolhido em campos personalizados do ploomes*
             *                                                               *
             *****************************************************************/
-            $quote = $this->ploomesServices->requestQuote($deal);
-            //busca Observação da Proposta (Quote)
+           (!empty($deal->lastQuoteId) ? $quote = $this->ploomesServices->requestQuote($deal): throw new PropostaNaoEncontradaException('Não havia uma proposta no card '. $deal->id . ' em: '.$current ));
+
+             //busca Observação da Proposta (Quote)
             ($notes = strip_tags($quote['Notes']))? $notes : $notes='Venda à Vista!';
             //busca Parcelamento na Proposta (Quote)
             $texto = $quote['OtherProperties'][0]['ObjectValueName'];
@@ -231,6 +237,7 @@ class DealHandler
             }else{
                 $parcelamento = 0;
             }
+           
             //installments é o parcelamento padrão do ploomes
             //print_r(count($quote['value'][0]['Installments']));
 
