@@ -2,11 +2,15 @@
 
 namespace src\services;
 
+use Exception;
 use PDOException;
 use src\contracts\DatabaseManagerInterface;
+use src\exceptions\FaturamentoNaoCadastradoException;
+use src\exceptions\WebhookReadErrorException;
 use src\models\Deal;
 use src\models\Homologacao_invoicing;
 use src\models\Homologacao_order;
+use src\models\Log;
 use src\models\Manospr_invoicing;
 use src\models\Manospr_order;
 use src\models\Manossc_invoicing;
@@ -17,24 +21,84 @@ class DatabaseServices implements DatabaseManagerInterface{
     //SALVA NO BANCO DE DADOS AS INFORMAÇÕES DO WEBHOOK
     public function saveWebhook(object $webhook):string
     {   
+        try{
 
-        $id = Webhook::insert(
-                    [
-                        'action'=>$webhook->action,
-                        'entity'=>$webhook->entity,
-                        'secondary_entity'=>$webhook->secondaryEntityId,
-                        'account_id'=>$webhook->accountId,
-                        'account_user_id'=>$webhook->actionUserId,
-                        'webhook_id'=>$webhook->webhookId,
-                        'webhook_creator_id'=>$webhook->webhookCreatorId,
-                        'created_at'=>date("Y-m-d H:i:s"),
-                        ]
-                )->execute();
+            $id=Webhook::insert(
+                [
+                    'entity'=>$webhook->entity,
+                    'json'=>$webhook->json,
+                    'status'=>$webhook->status,
+                    'result'=>$webhook->result,
+                    'created_at'=>date("Y-m-d H:i:s"),
+                    ]
+            )->execute();
+            
+            return $id;
 
-                if(empty($id)){
-                    return "Erro ao cadastrar webhook no banco de dados.";
-                }
-                return 'Id do cadastro do webhook no banco: '.$id;
+        }catch(PDOException $e){
+            throw new WebhookReadErrorException('Erro ao gravar o webhook na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+        }
+        
+    }
+    //BUSCA NO BANCO DE DADOS INFORMAÇÕES DO WEBHOOK A SER PROCESSADO.
+    public function getWebhook($status){
+        try{
+            $hook = Webhook::select()->where('status', $status)->orderBy('created_at')->one();
+            return (!$hook ? throw new WebhookReadErrorException('Não existem processos pendentes no momento. Data: '.date('d/m/Y H:i:s').PHP_EOL, 552) : $hook);
+            return $hook;
+        }catch(PDOException $e){
+            throw new WebhookReadErrorException('Erro ao buscar o webhook na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+        }
+      
+    }
+    //ALTERA O STATUS DO WEBHOOK
+    public function alterStatusWebhook($id, $statusId){
+        // print 'id do webhook no bd = '.$id. PHP_EOL;
+        // print 'Id do status para mudar na base = '.$statusId. PHP_EOL;
+
+        $status = [];
+        $status[1] = 'Recebido';
+        $status[2] = 'Processando';
+        $status[3] = 'Sucesso';
+        $status[4] = 'ERRO';
+        
+
+        try{
+            Webhook::update()
+            ->set('status', $statusId)
+            ->set('result', $status[$statusId])
+            ->set('updated_at', date('Y-m-d H:i:s'))
+            ->where('id',$id)
+            ->execute();
+
+            return true;
+            
+        }catch(PDOException $e){
+            throw new WebhookReadErrorException('Não foi possível alterar o status do webhook para '.$status[$statusId].'. Motivo: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+        }
+      
+    }
+
+    //SALVA LOG NO BANCO DE DADOS COM AS INFORMAÇÕES DO ERRO
+    public function registerLog($idWebhook, $message, $entity)
+    {   
+        try{
+
+            $id=Log::insert(
+                [
+                    'entity'=>$entity,
+                    'message'=>$message,
+                    'webhook_id'=>$idWebhook,
+                    'created_at'=>date("Y-m-d H:i:s"),
+                    ]
+            )->execute();
+            
+            return $id;
+
+        }catch(PDOException $e){
+            throw new WebhookReadErrorException('Erro ao gravar log na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+        }
+        
     }
     //SALVA NO BANCO DE DADOS AS INFORMAÇÕES DO DEAL
     public function saveDeal(object $deal):string
@@ -60,39 +124,12 @@ class DatabaseServices implements DatabaseManagerInterface{
                     'created_at'=>date('Y-m-d H:i:s'),
                     ]
             )->execute();
+            
+            return $id;
         }catch(PDOException $e){
-            // if ($e->getCode() == 2006) {
-            //     // Tentar reconectar
-            //     $id = Deal::insert(
-            //         [
-            //             'billing_basis'=>$deal->baseFaturamento,
-            //             'billing_basis_title'=>$deal->baseFaturamentoTitle,
-            //             'deal_id'=>$deal->id,
-            //             'omie_order_id' => $deal->omieOrderId,
-            //             'contact_id'=>$deal->contactId,
-            //             'person_id'=>$deal->personId,
-            //             'pipeline_id'=>$deal->pipelineId,
-            //             'stage_id'=>$deal->stageId,
-            //             'status_id'=>$deal->statusId,
-            //             'won_quote_id'=>$deal->wonQuoteId,
-            //             'create_date'=>$deal->createDate,
-            //             'last_order_id'=>$deal->lastOrderId,
-            //             'creator_id'=>$deal->creatorId,
-            //             'webhook_id'=>$deal->webhookId,
-            //             'created_at'=>date('Y-m-d H:i:s'),
-            //          ]
-            //     )->execute();
-                
-            // } else {
-            //     throw $e;
-            // }
-            print_r($e->getMessage());
+            throw new WebhookReadErrorException('Erro ao gravar o card na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
         }
-
-        if(empty($id)){
-            return "Erro ao cadastrar Venda no banco de dados.";
-        }
-        return $id;
+        
     }
     //BUSCA UM DEAL PELO LASTORDER ID
     public function getDealByLastOrderId(int $idPedidoIntegracao)
@@ -124,24 +161,34 @@ class DatabaseServices implements DatabaseManagerInterface{
                 $database = new Manossc_order();
                 break;
         }
-        
-        $id = $database::insert(
-            [
-                'id_omie'=>$order->idOmie,
-                'cod_cliente'=>$order->codCliente,
-                'cod_pedido_integracao'=>$order->codPedidoIntegracao ?? null,
-                'num_pedido_omie'=>$order->numPedidoOmie,
-                'cod_cliente_integracao'=>$order->codClienteIntegracao ?? null,
-                'data_previsao'=>$order->dataPrevisao,
-                'num_conta_corrente'=>$order->numContaCorrente,
-                'cod_vendedor_omie'=>$order->codVendedorOmie,
-                'id_vendedor_ploomes'=>$order->idVendedorPloomes ?? null,   
-                'app_key'=>$order->appKey ?? null,             
-                'created_at'=>date('Y-m-d H:i:s'),
-            ]
-        )->execute();
 
-        return ($id > 0 ) ? $id : false;
+        try{
+
+            $id = $database::insert(
+                [
+                    'id_omie'=>$order->idOmie,
+                    'cod_cliente'=>$order->codCliente,
+                    'cod_pedido_integracao'=>$order->codPedidoIntegracao ?? null,
+                    'num_pedido_omie'=>$order->numPedidoOmie,
+                    'cod_cliente_integracao'=>$order->codClienteIntegracao ?? null,
+                    'data_previsao'=>$order->dataPrevisao,
+                    'num_conta_corrente'=>$order->ncc,
+                    'cod_vendedor_omie'=>$order->codVendedorOmie,
+                    'id_vendedor_ploomes'=>$order->idVendedorPloomes ?? null,   
+                    'app_key'=>$order->appKey ?? null,             
+                    'created_at'=>date('Y-m-d H:i:s'),
+                ]
+            )->execute();
+    
+            return $id;
+
+        }
+        catch(PDOException $e){
+            throw new WebhookReadErrorException('Erro ao gravar a venda na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+        }
+
+        
+        
     }
     //VERIFICAR SE EXISTE A ORDEM NA BASE DE DADOS
     public function isIssetOrder(int $orderNumber, string $target){
@@ -219,7 +266,9 @@ class DatabaseServices implements DatabaseManagerInterface{
                 ->set('is_canceled', 1)
                 ->set('updated_at', date('Y-m-d H:i:s'))
                 ->where('id_omie',$orderNumber)
-                ->execute();           
+                ->execute();
+                
+                return true;
 
         }catch(PDOException $e){
             return $e->getMessage();
@@ -253,7 +302,7 @@ class DatabaseServices implements DatabaseManagerInterface{
                     'client_id'=>$invoicing->idCliente,
                     'order_id'=>$invoicing->idPedido,
                     'invoice_number'=>$invoicing->nNF,
-                    'ord_number'=>$invoicing->numeroPedido,
+                    'order_number'=>$invoicing->numeroPedido,
                     'order_amount'=>$invoicing->valorPedido,
                     'user_id'=>$invoicing->authorId,
                     'user_email'=>$invoicing->authorEmail,
@@ -266,8 +315,11 @@ class DatabaseServices implements DatabaseManagerInterface{
             return $id;
 
         }catch(PDOException $e){
-            return 'Erro ao cadastrar Faturamenro no banco de dados! - '. $e->getMessage();
-        }
+            $err = explode(':',$e->getMessage());
+            if($err[0] === "SQLSTATE[23000]")
+            throw new PDOException($e->getMessage());
+           }
+           $message['invoicing']['saveInvoincing'] = 'Erro ao gravar nota'.$invoicing->nNF.' na base de dados '.print $e->getmessage();
         
     }
 

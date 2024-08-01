@@ -13,6 +13,7 @@ use src\exceptions\InteracaoNaoAdicionadaException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
+use src\exceptions\ProjetoNaoEncontradoException;
 use src\exceptions\PropostaNaoEncontradaException;
 use src\exceptions\VendedorInexistenteException;
 use src\exceptions\WebhookReadErrorException;
@@ -23,6 +24,7 @@ use src\models\Omie;
 use src\services\DatabaseServices;
 use src\services\OmieServices;
 use src\services\PloomesServices;
+use stdClass;
 
 class DealHandler
 {
@@ -37,31 +39,120 @@ class DealHandler
         $this->databaseServices = $databaseServices;
     }
 
-    //LÊ O WEBHOOK E CRIA O PEDIDO
-    public function readDealHook($json)
-    {   
-       
-        $current = date('d/m/Y H:i:s');
-        $message = [];
+    //SALVA O WEBHOOK NO BANCO DE DADOS
+    public function saveDealHook($json){
+
         $decoded = json_decode($json, true);
+
         //infos do webhook
         $webhook = new Webhook();
-        $webhook->action = $decoded['Action']; // Ação 
-        $webhook->entity = $decoded['Entity']; // Entidade
-        $webhook->secondaryEntityId = $decoded['SecondaryEntityId']; // Entidade Secundária
-        $webhook->accountId = $decoded['AccountId']; // Conta associada
-        $webhook->actionUserId = $decoded['ActionUserId']; // Id do Usuário
-        $webhook->webhookId = $decoded['WebhookId']; // Id do Webhook
-        $webhook->webhookCreatorId = $decoded['WebhookCreatorId']; // Id do usuário que criou o webhook
+        $webhook->json = $json; //webhook 
+        $webhook->status = 1; // recebido
+        $webhook->result = 'Rececibo';
+        $webhook->entity = $decoded['Entity'] ?? null;
+        //salva o hook no banco
+        return ($id = $this->databaseServices->saveWebhook($webhook)) ? ['id'=>$id, 'msg' =>'Webhook Salvo com sucesso id = '.$id .'às '.date('d/m/Y H:i:s')] : 0;
+
+    }
+
+    //PROCESSA E CRIA O PEDIDO. CHAMA O REPROCESS CASO DE ERRO
+    public function startProcess($status)
+    {   
+
+        /*
+        * inicia o processo de crição de pedido, caso de certo retorna mensagem de ok pra gravar em log, e caso de erro retorna falso
+        */
+        // $status = 1;//recebido
+        $hook = $this->databaseServices->getWebhook($status);
+        // $json = $hook['json'];
+        $status = 2; //processando
+        $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
         
-        if (isset($decoded['Action']) && $decoded['Action'] == "Win" && !empty($decoded['New']['LastOrderId'])) 
+        if($alterStatus){
+            $winDeal = Self::winDeal($hook);
+            if(!isset($winDeal['winDeal']['error'])){
+                $status = 3; //Success
+                $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
+                if($alterStatus){
+                    
+                    return $winDeal;//card processado pedido criado no Omie retorna mensagem winDeal para salvr no log
+                }
+
+            }else{
+                $status = 4; //falhou
+                $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
+                
+                $reprocess = Self::reprocessWebhook();
+
+                if($reprocess['winDeal']['error']){
+
+                    $log = $this->databaseServices->registerLog($hook['id'], $reprocess['winDeal']['error'], $hook['entity']); 
+
+                    
+                    throw new WebhookReadErrorException('Erro ao gravar pedido: '.$reprocess['winDeal']['error'].'Salvo em logs do sistema (log id: '.$log.')'. date('d/m/Y H:i:s'), 500);
+                    
+                    return $reprocess['winDeal']['error'];
+
+                }
+                
+            }
+        }
+                 
+    }
+
+    //REPROCESSA O CARD COM FALHA
+    public function reprocessWebhook(){
+        $status = 4;//falhou
+        $hook = $this->databaseServices->getWebhook($status);
+        //$json = $hook['json'];
+        $status = 2; //processando
+        $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
+        
+        if($alterStatus){
+            
+            $winDeal = Self::winDeal($hook);
+            
+            if(!isset($winDeal['winDeal']['error'])){
+                $status = 3; //Sucesso
+                $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
+                if($alterStatus){
+                    return $winDeal;//card processado pedido criado no Omie retorna mensagem winDeal para salvr no log
+                }
+
+            }else{
+                $status = 4; //falhou com mensagem
+                $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
+                //for($i=0;$i<1;$i++){
+                                  
+                // $reprocess = $this->reprocessWebhook();
+
+                // throw new WebhookReadErrorException('deve aparecer o erro aqui: '.$reprocess['winDeal']['error'],500);
+                // if(!isset($reprocess['winDeal']['error'])){
+                //     return $reprocess;
+                // }
+                
+                // // var_dump($reprocess);
+                // // exit;
+                // // $i++;
+                // // }
+                return $winDeal;
+            }
+        }
+        
+    }
+ 
+    public function winDeal($webhook){
+        $m = [];
+        $current = date('d/m/Y H:i:s');
+        $message = [];
+        $json = $webhook['json'];
+        $decoded = json_decode($json, true);  
+        
+        if (isset($decoded['Action']) && $decoded['Action'] == "Win" && !empty($decoded['New']['LastOrderId']) && !empty($decoded['New']['LastQuoteId'])) 
         {    
+            
             //cria objeto deal
-            $deal = new Deal();
-            //salva o hook no banco
-            $idWebhookBd = $this->databaseServices->saveWebhook($webhook);
-            $deal->idWebhookBd = $idWebhookBd;
-            $message['webhookMessage'] ='Novo webhook criado id = '.$webhook->webhookId . ' em: '. $current;
+            $deal = new Deal();            
             /************************************************************
             *                   Other Properties                        *
             *                                                           *
@@ -73,13 +164,15 @@ class DealHandler
             foreach ($decoded['New']['OtherProperties'] as $key => $op) {
                 $prop[$key] = $op;
             }
+            
             //infos do Deal new
             //$deal->attachmentsItems = $decoded['New']['AttachmentsItems'];
             //$deal->collaboratingUsers = (isset($decoded['New']['CollaboratingUsers'][0]['UserId'])) ? $decoded['New']['CollaboratingUsers'][0]['UserId'] : 'Não definido'; // Usuários colaboradores
             //$deal->contacts = $decoded['New']['Contacts']; // Contatos relacionados
             //$deal->contactsProducts = $decoded['New']['ContactsProducts']; // Produtos de cliente
             // Base de Faturamento
-            $deal->baseFaturamento = (isset($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']) && !empty($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'])) ? $prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'] : throw new BaseFaturamentoInexistenteException('Base de faturamento inexistente para o card id: '.$decoded['New']['Id'].' e pedido de venda Ploomes CRM: '.$decoded['New']['LastOrderId'].'em'.$current,1001);
+            $deal->baseFaturamento = (isset($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']) && !empty($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']))? $prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'] : $m[] = 'Base de faturamento inexistente';
+
             // Fim de $prop Outras Propriedades //
             //$deal->products = $decoded['New']['Products']; //Produtos relacionados
             //$products = $deal->products; //Produtos relacionados
@@ -95,8 +188,10 @@ class DealHandler
             $deal->id = $decoded['New']['Id']; //Id do Deal
             $deal->title = $decoded['New']['Title']; // Título do Deal
             $deal->contactId = $decoded['New']['ContactId']; // Contatos relacionados
+
             // Busca o CNPJ do contato 
-            (!empty($contactCnpj = $this->ploomesServices->contactCnpj($deal))) ? $contactCnpj : throw new CnpjClienteInexistenteException('Cliente não informado ou não cadastrado no Omie ERP. Id do card Ploomes CRM: '.$decoded['New']['Id'].' e pedido de venda Ploomes CRM: '.$decoded['New']['LastOrderId'].'em'.$current,1002); //cnpj do cliente
+            ($contactCnpj = $this->ploomesServices->contactCnpj($deal)) ? $contactCnpj : $m[] = 'Cliente não informado ou não cadastrado no Omie ERP. Id do card Ploomes CRM: '.$decoded['New']['Id'].' e pedido de venda Ploomes CRM: '.$decoded['New']['LastOrderId'].'em'.$current; //cnpj do cliente
+          
             $deal->contactName = $decoded['New']['ContactName']; // Nome do Contato no Deal
             $deal->personId = $decoded['New']['PersonId']; // Id do Contato
             // $deal->personName = $decoded['New']['PersonName']; // Nome do contato
@@ -116,9 +211,11 @@ class DealHandler
             $deal->lastStageId = $decoded['New']['LastStageId'];
             // $deal->lossReasonId = $decoded['New']['LossReasonId']; // Motivo de perda
             // $deal->originId = $decoded['New']['OriginId']; // Origem
+
             $deal->ownerId = $decoded['New']['OwnerId']; // Responsável
-            (!empty($mailVendedor = $this->ploomesServices->ownerMail($deal)))?$mailVendedor:
-            throw new EmailVendedorNaoExistenteException('Não foi encontrado o email deste vendedor. Id do card Ploomes CRM: '.$decoded['New']['Id'].' e pedido de venda Ploomes CRM: '.$decoded['New']['LastOrderId'].'em'.$current, 1003);
+            ($mailVendedor = $this->ploomesServices->ownerMail($deal)) ? $mailVendedor: $m[] = 'Não foi encontrado o email deste vendedor. Id do card Ploomes CRM: '.$decoded['New']['Id'].' e pedido de venda Ploomes CRM: '.$decoded['New']['LastOrderId'].'em'.$current;
+            //$mailVendedor = 'vendas9@fielpapeis.com.br';
+    
             // $deal->startDate = $decoded['New']['StartDate']; // Início
             $deal->finishDate = $decoded['New']['FinishDate']; // Término
             // $deal->currencyId = $decoded['New']['CurrencyId']; // Moeda
@@ -147,7 +244,7 @@ class DealHandler
             // $deal->importationIdUpdate = $decoded['New']['ImportationIdUpdate']; // Id da importação de atualização (novo)
             // $deal->publicFormIdCreate = $decoded['New']['PublicFormIdCreate']; // Id do formulário externo de criação
             // $deal->publicFormIdUpdate = $decoded['New']['PublicFormIdUpdate']; // Id do formulário externo de atualização
-            $deal->webhookId = $webhook->webhookId; //inclui o id do webhook no deal
+            $deal->webhookId = $webhook['id']; //inclui o id do webhook no deal
             
             /**************************************************** 
             *        Encontra a base de faturamento             *
@@ -156,11 +253,14 @@ class DealHandler
             * para encontrar a base de faturamento do Omie      *
             *                                                   *
             *****************************************************/
+            
             $omie = new Omie();
             switch ($deal->baseFaturamento) {
+                //case 410724733:
                 case 404096111:
                     $deal->baseFaturamentoTitle = 'Manos PR';
                     $omie->baseFaturamentoTitle = 'Manos PR'; 
+                    $omie->target = 'MPR'; 
                     $omie->ncc = $_ENV['NCC_MPR'];
                     $omie->appSecret = $_ENV['SECRETS_MPR'];
                     $omie->appKey = $_ENV['APPK_MPR'];
@@ -169,6 +269,7 @@ class DealHandler
                 case 404096110:
                     $deal->baseFaturamentoTitle = 'Manos SC';
                     $omie->baseFaturamentoTitle = 'Manos SC';
+                    $omie->target = 'MSC'; 
                     $omie->ncc = $_ENV['NCC_MSC'];
                     $omie->appSecret = $_ENV['SECRETS_MSC'];
                     $omie->appKey = $_ENV['APPK_MSC'];
@@ -177,11 +278,42 @@ class DealHandler
                 case 404096109:
                     $deal->baseFaturamentoTitle = 'Manos Homologação';
                     $omie->baseFaturamentoTitle = 'Manos Homologação';
+                    $omie->target = 'MHL'; 
                     $omie->ncc = $_ENV['NCC_MHL'];
                     $omie->appSecret = $_ENV['SECRETS_MHL'];
                     $omie->appKey = $_ENV['APPK_MHL'];
                     break;
+
+                default:
+                    $m[] = 'Base de faturamento não encontrada. Impossível fazer consultas no omie';
+                   
+                    break;
             }
+
+            if(!empty($m)){
+
+                $status = 4;
+                $alterStatus = $this->databaseServices->alterStatusWebhook($webhook['id'], $status);
+                $log = $this->databaseServices->registerLog($webhook['id'], $m[0], $decoded['Entity']);
+
+                if($alterStatus && $log){
+
+                    //monta a mensagem com erro para atualizar o card do ploomes
+                $msg=[
+                    'ContactId' => $deal->contactId,
+                    'DealId' => $deal->id ?? null,
+                    'Content' => 'Erro ao criar pedido no OMIE ERP  na base '.$deal->baseFaturamentoTitle.' via API BICORP. Mensagem : '.$m[0],
+                    'Title' =>'Erro ao criar pedido'
+                ];
+               
+                //cria uma interação no card
+                ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['winDeal']['interactionMessage'] = 'Mensagem de erro enviada com sucesso! Pedido Ploomes: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' Pedido não foi gravado no Omie ERP em: '.$current : throw new WebhookReadErrorException('Não foi possível gravar a mensagem de erro na venda ',500);
+
+                }
+
+                throw new WebhookReadErrorException('Erro ao montar o pedido pra enviar ao omie. Erro: '.$m[0],500);
+            }
+            
             /**************************************************** 
             *        busca dados da venda no ploomes            *
             *                                                   *
@@ -189,12 +321,63 @@ class DealHandler
             * Montamos o det (array de items da venda no omie)  *
             *                                                   *
             *****************************************************/
-            (!empty($arrayRequestOrder = $this->ploomesServices->requestOrder($deal))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes. Card id: '.$deal->id.' em: '.$current,1004 );
+            // (!empty($arrayRequestOrder = $this->ploomesServices->requestOrder($deal))) ? $arrayRequestOrder : throw new PedidoInexistenteException('Venda Id: '.$deal->lastOrderId.' não encontrada no Ploomes. Card id: '.$deal->id.' em: '.$current,1004 );
 
-            //array de produtos da venda
-            $productsRequestOrder = $arrayRequestOrder['Products'];
-            // print_r($arrayRequestOrder);
-            // exit;
+            // //array de produtos da venda
+            // $productsRequestOrder = $arrayRequestOrder['Products'];
+            // // print_r($arrayRequestOrder);
+            // // exit;
+            // //Array de detalhes do item da venda
+            // $det = [];
+            // $productsOrder = [];
+            // foreach ($productsRequestOrder as $prdItem) { 
+                
+            //     $det['ide'] = [];
+                
+            //     $det['ide']['codigo_item_integracao'] = $prdItem['Id'];
+            //     $det['produto'] = [];
+            //     $idPrd = $prdItem['Product']['Code'];              
+            //     //encontra o id do produto no omie atraves do Code do ploomes (é necessário pois cada base omie tem código diferente pra cada item)
+            //     (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current,1005);
+            //     $det['produto']['codigo_produto'] = $idProductOmie;//mudei aqui de $idproductOmie para $idPrd
+            //     $det['produto']['quantidade'] = $prdItem['Quantity'];
+            //     $det['produto']['tipo_desconto'] = 'P';
+            //     $det['produto']['valor_desconto'] = number_format($prdItem['Discount'], 2, ',', '.');
+            //     $det['produto']['valor_unitario'] = $prdItem['UnitPrice'];
+            //     $det['inf_adic'] = [];
+            //     $det['inf_adic']['numero_pedido_compra'] = '123456789';
+            //     $det['inf_adic']['item_pedido_compra'] =1234;
+
+            //     $productsOrder[] = $det;
+            // }
+            /****************************************************************
+            *                          Request Quote                        *
+            *                                                               *
+            * Busca os dados da proposta (quote) para pegar a observação    *
+            * e o parcelamento escolhido em campos personalizados do ploomes*
+            *                                                               *
+            *****************************************************************/
+            
+           (!empty($deal->lastQuoteId)) ? $quote = $this->ploomesServices->requestQuote($deal): $m[] = 'Não havia uma proposta no card '. $deal->id . ' em: '.$current;
+           $quoteOtherProperties = [];
+           foreach ($quote['OtherProperties'] as $ky => $ops) {
+    
+            //   echo $ky .PHP_EOL;
+            //   echo $ops['FieldKey'] .PHP_EOL;
+            //   echo $ops['StringValue'] .PHP_EOL;
+        
+
+                $quoteOtherProperties[$ops['FieldKey']]= $ops['StringValue'] ?? $ops['ObjectValueName'];
+            
+
+           }
+          
+        //    $deal->numPedidoCliente = (isset($quoteOtherProperties['FieldKey']) && !empty($quoteOtherProperties['FieldKey']) && $quoteOtherProperties['FieldKey'] === 'quote_C9AD2121-0E6F-4610-AA8D-4614195D2EB6')?$quoteOtherProperties['StringValue']:null);
+           $deal->numPedidoCliente = (isset($quoteOtherProperties['quote_C9AD2121-0E6F-4610-AA8D-4614195D2EB6']) && !empty($quoteOtherProperties['quote_C9AD2121-0E6F-4610-AA8D-4614195D2EB6'])?$quoteOtherProperties['quote_C9AD2121-0E6F-4610-AA8D-4614195D2EB6']:null);//em caso de obrigatoriedade deste campo $m[]='Erro ao criar pedido. Não havia numero pedido do Cliente
+           
+           $ocCliente = (isset($quoteOtherProperties['quote_9C575F54-27D2-425B-B7E8-C8C89B75D089']) && !empty($quoteOtherProperties['quote_9C575F54-27D2-425B-B7E8-C8C89B75D089'])?$quoteOtherProperties['quote_9C575F54-27D2-425B-B7E8-C8C89B75D089']:null);//em caso de obrigatoriedade deste campo $m[]='Erro ao criar pedido. Não havia Ordem de compra         //array de produtos da venda
+            $productsRequestOrder = $quote['Products'];
+           
             //Array de detalhes do item da venda
             $det = [];
             $productsOrder = [];
@@ -206,47 +389,70 @@ class DealHandler
                 $det['produto'] = [];
                 $idPrd = $prdItem['Product']['Code'];              
                 //encontra o id do produto no omie atraves do Code do ploomes (é necessário pois cada base omie tem código diferente pra cada item)
-                (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : throw new ProdutoInexistenteException('Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current,1005);
-                $det['produto']['codigo_produto'] = $idProductOmie;//mudei aqui de $idproductOmie para $idPrd
+                (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : $m[] = 'Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current;
+                $det['produto']['codigo_produto'] = $idProductOmie;
                 $det['produto']['quantidade'] = $prdItem['Quantity'];
-                $det['produto']['tipo_desconto'] = 'P';
+                $det['produto']['tipo_desconto'] = 'P';// precisa ver a questão da porcentagem de descont ainda não fazemos isso
                 $det['produto']['valor_desconto'] = number_format($prdItem['Discount'], 2, ',', '.');
                 $det['produto']['valor_unitario'] = $prdItem['UnitPrice'];
                 $det['inf_adic'] = [];
-                $det['inf_adic']['numero_pedido_compra'] = '123456789';
-                $det['inf_adic']['item_pedido_compra'] = $idProductOmie;
+                $det['inf_adic']['numero_pedido_compra'] = $ocCliente ?? "0";
+                $det['inf_adic']['item_pedido_compra'] =$prdItem['Ordination']+1;//num sequencial dos itens no pedido de compra
 
                 $productsOrder[] = $det;
             }
-            /****************************************************************
-            *                          Request Quote                        *
-            *                                                               *
-            * Busca os dados da proposta (quote) para pegar a observação    *
-            * e o parcelamento escolhido em campos personalizados do ploomes*
-            *                                                               *
-            *****************************************************************/
-           (!empty($deal->lastQuoteId) ? $quote = $this->ploomesServices->requestQuote($deal): throw new PropostaNaoEncontradaException('Não havia uma proposta no card '. $deal->id . ' em: '.$current ));
-
+           
              //busca Observação da Proposta (Quote)
             ($notes = strip_tags($quote['Notes']))? $notes : $notes='Venda à Vista!';
-            //busca Parcelamento na Proposta (Quote)
-            $texto = $quote['OtherProperties'][0]['ObjectValueName'];
-            //verifica se exixtema parcelas ou se é a vista
-            if($texto !== "a vista" ){
-                $parcelamento = $texto;
-            }else{
-                $parcelamento = 0;
-            }
+            //busca Parcelamento na Proposta (Quote) obrigatório
+            //$quote['OtherProperties'][0]['ObjectValueName']
+            ($intervalo = $quote['OtherProperties'][0]['ObjectValueName']) ? $intervalo : $m[] = 'Prazo de pagamento não foi informado na proposta. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current;
+            //verifica se exixtem parcelas ou se é a vista
+            
+            $parcelamento = $intervalo;
            
             //installments é o parcelamento padrão do ploomes
             //print_r(count($quote['value'][0]['Installments']));
 
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
-            (!empty($idClienteOmie = $this->omieServices->clienteIdOmie($omie, $contactCnpj))) ? $idClienteOmie : throw new ClienteInexistenteException('Id do cliente não encontrado no Omie ERP! Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1006);
+            (!empty($idClienteOmie = $this->omieServices->clienteIdOmie($omie, $contactCnpj))) ? $idClienteOmie : $m[] = 'Id do cliente não encontrado no Omie ERP! Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current;
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
-            (!empty($codVendedorOmie = $this->omieServices->vendedorIdOmie($omie, $mailVendedor))) ? $codVendedorOmie : throw new VendedorInexistenteException('Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current,1007);
-            //inclui o pedido no omie
+             (!empty($codVendedorOmie = $this->omieServices->vendedorIdOmie($omie, $mailVendedor))) ? $codVendedorOmie : $m[] = 'Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current;
+       
+            // busca codigo do Projeto no Omie
+            $deal->projeto = ($quoteOtherProperties['quote_C7D17E93-015E-4A36-A011-259534AF0A57']) ?? null;
+            // (($codProjeto = $this->omieServices->buscaIdProjetoOmie($omie,$deal->projeto))? $codProjeto : $m[] = 'Projeto não encontrado no Omie ERP ou está inativo! Card número: '.$deal->id.' Pedido de venda número '.$deal->lastOrderId.' data: '.$current);
             
+            if($deal->projeto !== null){
+
+                ($codProjeto = $this->omieServices->buscaIdProjetoOmie($omie,$deal->projeto))? $codProjeto : null;
+                $omie->codProjeto = $codProjeto;
+            }
+
+            if(!empty($m)){
+
+                $status = 4;
+                $alterStatus = $this->databaseServices->alterStatusWebhook($webhook['id'], $status);
+                $log = $this->databaseServices->registerLog($webhook['id'], $m[0], $decoded['Entity']);
+
+                if($alterStatus && $log){
+
+                    //monta a mensagem com erro para atualizar o card do ploomes
+                $msg=[
+                    'ContactId' => $deal->contactId,
+                    'DealId' => $deal->id ?? null,
+                    'Content' => 'Erro ao criar pedido no OMIE ERP  na base '.$deal->baseFaturamentoTitle.' via API BICORP. Mensagem : '.$m[0],
+                    'Title' =>'Erro ao criar pedido'
+                ];
+               
+                //cria uma interação no card
+                ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['winDeal']['interactionMessage'] = 'Mensagem de erro enviada com sucesso! Pedido Ploomes: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' Pedido não foi gravado no Omie ERP em: '.$current : throw new WebhookReadErrorException('Não foi possível gravar a mensagem de erro na venda',500);
+
+                }
+
+                throw new WebhookReadErrorException('Erro ao montar o pedido pra enviar ao omie. Erro: '.$m[0],500);
+            }
+         
             /****************************************************************
             *                     Cria Pedido no Omie                       *
             *                                                               *
@@ -258,38 +464,89 @@ class DealHandler
             * Total do pedido e Array de parcelamento                       *
             *                                                               *
             *****************************************************************/
-            $incluiPedidoOmie = $this->omieServices->criaPedidoOmie($omie, $idClienteOmie, $deal, $productsOrder, $codVendedorOmie, $notes, $arrayRequestOrder, $parcelamento);
+            $incluiPedidoOmie = $this->omieServices->criaPedidoOmie($omie, $idClienteOmie, $deal, $productsOrder, $codVendedorOmie, $notes, $parcelamento);
+
             //verifica se criou o pedido no omie
-            if ($incluiPedidoOmie) {
-                //se no pedido existir faulstring, então deu erro na inclusão
-                if(isset($incluiPedidoOmie->faultstring)){
-                    throw new PedidoRejeitadoException($incluiPedidoOmie->faultstring,1008);
-                }
-                $message['returnPedidoOmie'] ='Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: '.intval($incluiPedidoOmie->numero_pedido);
-                //inclui o id do pedido no omie na tabela deal
-                if($incluiPedidoOmie->codigo_pedido){
-                    //salva um deal no banco
-                    $deal->omieOrderId = $incluiPedidoOmie->codigo_pedido;
-                    $dealCreatedId = $this->databaseServices->saveDeal($deal);   
-                    $message['dealMessage'] ='Id do Deal no Banco de Dados: '.$dealCreatedId;  
-                }
-                //monta a mensadem para atualizar o card do ploomes
+            if (isset($incluiPedidoOmie['codigo_status']) && $incluiPedidoOmie['codigo_status'] == "0") {
+                
+                //monta a mensagem para atualizar o card do ploomes
                 $msg=[
                     'ContactId' => $deal->contactId,
-                    'DealId' => $deal->id,
-                    'Content' => 'Venda('.intval($incluiPedidoOmie->numero_pedido).') criada no OMIE via API BICORP na base '.$deal->baseFaturamentoTitle.'.',
+                    'DealId' => $deal->id ?? null,
+                    'Content' => 'Venda ('.intval($incluiPedidoOmie['numero_pedido']).') criada no OMIE via API BICORP na base '.$deal->baseFaturamentoTitle.'.',
                     'Title' => 'Pedido Criado'
                 ];
+               
                 //cria uma interação no card
-                ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['interactionMessage'] = 'Integração concluída com sucesso!<br> Pedido Ploomes: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' gravados no Omie ERP com o numero: '.intval($incluiPedidoOmie->numero_pedido).' e mensagem enviada com sucesso em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem na venda',1010);
+                ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['winDeal']['interactionMessage'] = 'Integração concluída com sucesso!<br> Pedido Ploomes: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' gravados no Omie ERP com o numero: '.intval($incluiPedidoOmie['numero_pedido']).' e mensagem enviada com sucesso em: '.$current : throw new WebhookReadErrorException('Não foi possível gravar a mensagem na venda',500);
+                
+                $message['winDeal']['returnPedidoOmie'] ='Pedido criado no Omie via BICORP INTEGRAÇÃO pedido numero: '.intval($incluiPedidoOmie['numero_pedido']);
+                //inclui o id do pedido no omie na tabela deal
+                if($incluiPedidoOmie['codigo_pedido']){
+                    //salva um deal no banco
+                    $deal->omieOrderId = $incluiPedidoOmie['codigo_pedido'];
+                    $dealCreatedId = $this->databaseServices->saveDeal($deal);   
+                    $message['winDeal']['dealMessage'] ='Id do Deal no Banco de Dados: '.$dealCreatedId;  
+                    if($dealCreatedId){
+
+                        $omie->idOmie = $deal->omieOrderId;
+                        $omie->codCliente = $idClienteOmie;
+                        $omie->codPedidoIntegracao = $deal->lastOrderId;
+                        $omie->numPedidoOmie = intval($incluiPedidoOmie['numero_pedido']);
+                        $omie->codClienteIntegracao = $deal->contactId;
+                        $omie->dataPrevisao = $deal->finishDate;
+                        $omie->codVendedorOmie = $codVendedorOmie;
+                        $omie->idVendedorPloomes = $deal->ownerId;   
+                        $omie->appKey = $omie->appKey;             
+               
+                        $id = $this->databaseServices->saveOrder($omie);
+                        $message['winDeal']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos '.$omie->baseFaturamentoTitle.' id '.$id.'em: '.$current;
+                    }
+                    
+                }
+
             }else{
-                $message['returnPedidoOmie'] ='Não foi possível gravar o pedido no Omie!';
+                
+                $message['winDeal']['error'] ='Não foi possível gravar o pedido no Omie!'.$incluiPedidoOmie['faultstring'];
+                 //throw new WebhookReadErrorException('Erro ao salvar pedido no Omie: '. $incluiPedidoOmie['faultstring'].' Card id = '.$deal->id.' Data = '.$current,500);
+                // print_r($incluiPedidoOmie);
+                // exit;
+                // //se no pedido existir faulstring, então deu erro na inclusão
+                // if(isset($incluiPedidoOmie['faultstring'])){
+                    //monta a mensagem para atualizar o card do ploomes
+                $msg=[
+                    'ContactId' => $deal->contactId,
+                    'DealId' => $deal->id ?? null,
+                    'Content' => 'Pedido não pode ser criado no OMIE ERP. Possívelmente houve divergência nos dados obrigatórios para integração. Favor contatar o responsável.',
+                    'Title' => 'Erro na integração'
+                ];
+               
+                //cria uma interação no card
+                ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['deal']['interactionMessage'] = 'Erro na integração, dados incompatíveis: '.$deal->lastOrderId.' card nº: '.$deal->id.' e client id: '.$deal->contactId.' gravados no Omie ERP com o numero: '.intval($incluiPedidoOmie['numero_pedido']).' e mensagem enviada com sucesso em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem na venda',500);
+                //}
             }           
             
             return $message;
         } else {
-            throw new WebhookReadErrorException('Não era um Card Ganho ou não havia venda na proposta do card Nº '.$decoded['New']['Id'].' data '.$current ,1009);
-        }                
+
+            $status = 4;
+            $m[]= 'Não havia proposta ou venda no card Nº '.$decoded['New']['Id'].', possívelmente não é proviniente de nenhum funil de vendas.';
+            $alterStatus = $this->databaseServices->alterStatusWebhook($webhook['id'], $status);
+            $log = $this->databaseServices->registerLog($webhook['id'], $m[0], $decoded['Entity']);
+
+            $msg=[
+                'ContactId' => $decoded['New']['ContactId'],
+                'DealId' => $decoded['New']['Id'] ?? null,
+                'Content' => 'Não havia proposta ou venda no card Nº '.$decoded['New']['Id'].', possívelmente não é proviniente de nenhum funil de vendas.'.$current ,
+                'Title' => 'Erro na integração'
+            ];
+           
+            //cria uma interação no card
+            ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['deal']['interactionMessage'] = 'Erro na integração, Não existia venda no card nº: '.$deal->id.' do client id: '.$deal->contactId.'. Mensagem enviada com sucesso em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível gravar a mensagem na venda',500);
+
+            throw new WebhookReadErrorException('Não era um Card Ganho ou não haviam proposta e venda no card Nº '.$decoded['New']['Id'].' data '.$current ,500);
+        }          
+
     }
 
     //LÊ O WEBHOOK DE CARD EXCLUIDO

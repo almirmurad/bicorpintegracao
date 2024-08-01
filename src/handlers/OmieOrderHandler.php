@@ -10,6 +10,7 @@ use src\exceptions\PedidoCanceladoException;
 use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoNaoExcluidoException;
+use src\exceptions\PedidoOutraIntegracaoException;
 use src\exceptions\WebhookReadErrorException;
 use src\services\DatabaseServices;
 use src\services\OmieServices;
@@ -34,14 +35,13 @@ class OmieOrderHandler
 
     public function newOmieOrder(string $json):array
     {
-
         $current = $this->current;
         $message = [];
         
         //decodifica o json de pedidos vindos do webhook
         $decoded = json_decode($json, true);
 
-        if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" ){
+        if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" && $decoded['event']['usuarioInclusao'] !== 'WEBSERVICE'){
 
             switch($decoded['appKey']){
 
@@ -54,13 +54,14 @@ class OmieOrderHandler
                     $order->codCliente = $decoded['event']['idCliente'];
                     //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
                     $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
-                    $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                    $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
                     //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                    $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                    $order->ncc = $decoded['event']['idContaCorrente'];
                     $order->codVendedorOmie = $decoded['author']['userId'];
                     //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
                     $order->appKey = $decoded['appKey'];  
-   
+
+                    
                     try{
 
                         $id = $this->databaseServices->saveOrder($order);
@@ -82,9 +83,9 @@ class OmieOrderHandler
                         $order->codCliente = $decoded['event']['idCliente'];
                         //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
                         $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
-                        $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                        $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
                         //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                        $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                        $order->ncc = $decoded['event']['idContaCorrente'];
                         $order->codVendedorOmie = $decoded['author']['userId'];
                         //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
                         $order->appKey = $decoded['appKey'];
@@ -111,9 +112,9 @@ class OmieOrderHandler
                     $order->codCliente = $decoded['event']['idCliente'];
                     //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
                     $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
-                    $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                    $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
                     //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                    $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                    $order->ncc = $decoded['event']['idContaCorrente'];
                     $order->codVendedorOmie = $decoded['author']['userId'];
                     //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
                     $order->appKey = $decoded['appKey'];
@@ -147,8 +148,90 @@ class OmieOrderHandler
             //cria uma interação no Ploomes
             ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['order']['orderInteraction'] = 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.' : throw new InteracaoNaoAdicionadaException('Não foi possível enviar a mensagem de pedido criado manualmente no Omie ERP ao Ploomes CRM.',1010);
 
+        }
+        elseif($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" && $decoded['event']['usuarioInclusao'] == 'WEBSERVICE' && $decoded['author']['userId'] == 89 && $decoded['event']['codIntPedido'] != "")
+        {
+            //se o pedido vier de uma integração por exemplo mercos
+
+            $order = new stdClass();
+            
+            $order->lastOrderId = $decoded['event']['codIntPedido'];//verifica se o pedido é do ploomes
+            (!$this->ploomesServices->requestOrder($order))? throw new PedidoOutraIntegracaoException('Não foi possível encontrar o pedido ['.$order->lastOrderId.'] no ploomes, pode ter sido enviado por outro webservice.'): true ;
+           
+            
+            switch($decoded['appKey']){
+                case 2337978328686:               
+                    $order->appSecret = $_ENV['SECRETS_MHL'];
+                    $order->target = 'MHL';
+                    $order->baseTitle = 'Manos Homologação';
+                    break;
+                    
+                case 2335095664902:
+                    $order->appSecret = $_ENV['SECRETS_MPR'];
+                    $order->target = 'MPR';
+                    $order->baseTitle = 'Manos-PR';
+                    break;
+                    
+                case 2597402735928:
+                    $order->appSecret = $_ENV['SECRETS_MSC'];
+                    $order->target = 'MSC';
+                    $order->baseTitle = 'Manos-SC';
+                    break;
+                }
+
+            $order->idOmie = $decoded['event']['idPedido'];
+            $order->codCliente = $decoded['event']['idCliente'];
+            $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+            $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
+            $order->ncc = $decoded['event']['idContaCorrente'];
+            $order->codVendedorOmie = $decoded['author']['userId'];
+            $order->appKey = $decoded['appKey'];
+
+            try{
+                
+                if($this->databaseServices->isIssetOrder($order->numPedidoOmie, $order->target)){
+
+                    //busca o cnpj do cliente através do id do omie
+                    $cnpjClient = ($this->omieServices->clienteCnpjOmie($order));
+                    //busca o contactId do cliente no ploomes pelo cnpj
+                    (!empty($contactId = $this->ploomesServices->consultaClientePloomesCnpj($cnpjClient)))?$contactId : throw new ContactIdInexistentePloomesCRM('Não foi Localizado no Ploomes CRM cliente cadastrado com o CNPJ: '.$cnpjClient.'',1505);
+                    //monta a mensadem para atualizar o ploomes 
+                    $msg=[
+                        'ContactId' => $contactId,
+                        'Content' => 'Confirmação de pedido ('.intval($order->numPedidoOmie).') criado com sucesso no Omie ERP na base '.$order->baseTitle,
+                        'Title' => 'Venda Integrada via API Bicorp'
+                    ];
+    
+                    //cria uma interação no Ploomes
+                    ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['order']['orderInteraction'] = 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.' : throw new InteracaoNaoAdicionadaException('Não foi possível enviar a mensagem de pedido criado manualmente no Omie ERP ao Ploomes CRM.',1010);
+
+                }else{
+                    $id = $this->databaseServices->saveOrder($order);
+
+                    $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de '.$order->baseTitle. ' id: '. $id.'em: '.$current.'Obs.: Criado após integração via bicorp Api ter falhado a gravação na base de dados da integração.';
+                
+                    //busca o cnpj do cliente através do id do omie
+                    $cnpjClient = ($this->omieServices->clienteCnpjOmie($order));
+                    //busca o contactId do cliente no ploomes pelo cnpj
+                    (!empty($contactId = $this->ploomesServices->consultaClientePloomesCnpj($cnpjClient)))?$contactId : throw new ContactIdInexistentePloomesCRM('Não foi Localizado no Ploomes CRM cliente cadastrado com o CNPJ: '.$cnpjClient.'',1505);
+                    //monta a mensadem para atualizar o ploomes 
+                    $msg=[
+                        'ContactId' => $contactId,
+                        'Content' => 'Confirmação de pedido ('.intval($order->numPedidoOmie).') criado com sucesso no Omie ERP na base '.$order->baseTitle,
+                        'Title' => 'Venda Integrada via API Bicorp'
+                    ];
+    
+                    //cria uma interação no Ploomes
+                    ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))?$message['order']['orderInteraction'] = 'Venda ('.intval($order->numPedidoOmie).') criado manualmente no Omie ERP.' : throw new InteracaoNaoAdicionadaException('Não foi possível enviar a mensagem de pedido criado manualmente no Omie ERP ao Ploomes CRM.',1010);
+                }
+
+            }catch(PDOException $e){
+                echo $e->getMessage();
+                throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+            }
+            
         }else{
-            throw new OrderControllerException('<br> Havia um orçamento e não um pedido no webhook em '. $current, 1500);
+            throw new OrderControllerException('Este pedido já foi salvo pela integração ou era apenas um orçamento '. $current, 1500);
         }
 
         $message['order']['orderCreate'] = 'Pedido ('.intval($order->numPedidoOmie).'), criado manualmente no Omie ERP e Interação enviada ao ploomes em: '.$current;
@@ -383,7 +466,7 @@ class OmieOrderHandler
         //monta a mensadem para atualizar o card do ploomes
         $msg=[
             'ContactId' => $contactId,
-            'Content' => 'Etapa dp pedido ('.$decoded['event']['numeroPedido'].') ALTERADA no Omie ERP para '.$decoded['event']['etapaDescr'].' em: '.$current,
+            'Content' => 'Etapa do pedido ('.$decoded['event']['numeroPedido'].') ALTERADA no Omie ERP para '.$decoded['event']['etapaDescr'].' em: '.$current,
             'Title' => 'Etapa do pedido ALTERADA no Omie ERP'
         ];
         //cria uma interação no card

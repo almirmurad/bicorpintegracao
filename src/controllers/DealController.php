@@ -10,9 +10,11 @@ use src\exceptions\BaseFaturamentoInexistenteException;
 use src\exceptions\ClienteInexistenteException;
 use src\exceptions\CnpjClienteInexistenteException;
 use src\exceptions\DealNaoExcluidoBDException;
+use src\exceptions\EmailVendedorNaoExistenteException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoRejeitadoException;
 use src\exceptions\ProdutoInexistenteException;
+use src\exceptions\ProjetoNaoEncontradoException;
 use src\exceptions\PropostaNaoEncontradaException;
 use src\exceptions\VendedorInexistenteException;
 use src\models\Deal;
@@ -55,6 +57,9 @@ class DealController extends Controller {
 
     public function winDeal()
     {
+        /*
+        *Recebe o webhook de card ganho, salva na base e retorna 200
+        */
         $json = file_get_contents('php://input');
         ob_start();
         var_dump($json);
@@ -65,65 +70,38 @@ class DealController extends Controller {
         try{
             
             $dealHandler = new DealHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
-            $response = $dealHandler->readDealHook($json);
+            $response = $dealHandler->saveDealHook($json);
 
-            if ($response) {
-                echo"<pre>";
-                json_encode($response);
-                print_r($response);
-                //grava log
-                //$decoded = json_decode($response, true);
-                ob_start();
-                var_dump($response);
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit;            
+            if ($response > 0) {
+
+                $message = [];
+                $message =[
+                    'status_code' => 200,
+                    'status_message' => 'Success: '. $response['msg'],
+                ];
+                
             }
-        }catch(WebhookReadErrorException $e){
-            echo '<pre>';
-            print $e->getMessage();           
-        }
-        catch(BaseFaturamentoInexistenteException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }
-        catch(CnpjClienteInexistenteException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }
-        catch(PedidoInexistenteException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }
-        catch(ProdutoInexistenteException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }
-        catch(ClienteInexistenteException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }
-        catch(VendedorInexistenteException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }
-        catch(PedidoRejeitadoException $e){
-            echo '<pre>';
-            print $e->getMessage();
-        }catch(PropostaNaoEncontradaException $e){
-            echo '<pre>';
-            print $e->getMessage();
+        }catch(WebhookReadErrorException $e){        
         }
         finally{
-            ob_start();
-            var_dump($e->getMessage());
-            $input = ob_get_contents();
-            ob_end_clean();
-            file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
-            exit; 
-        }
-        
+            if(isset($e)){
+                ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                return print $e->getMessage();
+            }
+             //grava log
+             ob_start();
+             print_r($message);
+             $input = ob_get_contents();
+             ob_end_clean();
+             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+             
+             return print $message['status_message'];
+           
+        }        
     }
 
     public function deletedDeal()
@@ -182,5 +160,96 @@ class DealController extends Controller {
         return print_r($ping);
         
     }
+    
+    public function processWinDeal(){
+        $status = file_get_contents('php://input');
+        
+    
+        /**
+         * processa o webhook 
+         */
+
+        try{
+            
+            $dealHandler = new DealHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $dealHandler->startProcess($status);
+
+            $message = [];
+            $message =[
+                'status_code' => 200,
+                'status_message' => $response,
+            ];
+                
+             
+            //grava log
+            ob_start();
+            print_r($message);
+            $input = ob_get_contents();
+            ob_end_clean();
+            file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+            //return $message['status_message'];
+        
+        }catch(WebhookReadErrorException $e){
+            // echo '<pre>';
+            // print $e->getMessage();           
+        }
+        catch(BaseFaturamentoInexistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        catch(CnpjClienteInexistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        catch(PedidoInexistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        catch(ProdutoInexistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        catch(ClienteInexistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        catch(VendedorInexistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        catch(PedidoRejeitadoException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }catch(PropostaNaoEncontradaException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }catch(ProjetoNaoEncontradoException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }catch(EmailVendedorNaoExistenteException $e){
+            // echo '<pre>';
+            // print $e->getMessage();
+        }
+        finally{
+            if(isset($e)){
+                ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                //print $e->getMessage();
+                $message = [];
+                $message =[
+                    'status_code' => 500,
+                    'status_message' => $e->getMessage(),
+                ];
+               
+                return print 'ERROR: '.$message['status_code'].' MENSAGEM: '.$message['status_message'];
+               }
+
+            return print $message['status_message']['winDeal']['interactionMessage'];
+        }
+
+    } 
 
 }

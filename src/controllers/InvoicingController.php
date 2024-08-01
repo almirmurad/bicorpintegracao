@@ -54,56 +54,56 @@ class InvoicingController extends Controller {
     {
         $json = file_get_contents('php://input');
 
-        ob_start();
-        var_dump($json);
-        $input = ob_get_contents();
-        ob_end_clean();
-        file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
+        // ob_start();
+        // var_dump($json);
+        // $input = ob_get_contents();
+        // ob_end_clean();
+        // file_put_contents('./assets/all.log', $input . PHP_EOL, FILE_APPEND);
 
         try{
             $invoiceHandler = new InvoiceHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
             $response = $invoiceHandler->readInvoiceHook($json);
             
-            if ($response) {
-                echo"<pre>";
-                json_encode($response);
-                print_r($response);
-                //grava log
-                //$decoded = json_decode($response, true);
-                ob_start();
-                var_dump($response);
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit;            
-            }
+            // if ($response) {
+            //     echo"<pre>";
+            //     json_encode($response);
+            //     print_r($response);
+            //     //grava log
+            //     //$decoded = json_decode($response, true);
+            //     ob_start();
+            //     var_dump($response);
+            //     $input = ob_get_contents();
+            //     ob_end_clean();
+            //     file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+            //     exit;            
+            // }
         }catch(WebhookReadErrorException $e){
-                echo '<pre>';
-                print $e->getMessage();
+                // echo '<pre>';
+                // print $e->getMessage();
             }
         catch(DealNaoEncontradoBDException $e){
-            echo '<pre>';
-            print $e->getMessage();           
+            // echo '<pre>';
+            // print $e->getMessage();           
         }
         catch(EstagiodavendaNaoAlteradoException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }
         catch(FaturamentoNaoCadastradoException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }
         catch(InteracaoNaoAdicionadaException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }
         catch(NotaFiscalNaoEncontradaException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }
         catch(PedidoNaoEncontradoOmieException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }
         finally{
             if(isset($e)){
@@ -113,10 +113,9 @@ class InvoicingController extends Controller {
                 $input = ob_get_contents();
                 ob_end_clean();
                 file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit; 
+                return print $e->getMessage();
             }
-            exit;
-
+            return print_r($response);
         }
         
     }
@@ -130,34 +129,34 @@ class InvoicingController extends Controller {
             $invoiceHandler = new InvoiceHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
             $response = $invoiceHandler->isDeletedInvoice($json);
             
-            if ($response) {
-                echo"<pre>";
-                json_encode($response);
-                //print_r($response);
-                //grava log
-                //$decoded = json_decode($response, true);
-                ob_start();
-                var_dump($response);
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit;        
-                // return print_r($response);    
-            }
+            // if ($response) {
+            //     echo"<pre>";
+            //     json_encode($response);
+            //     //print_r($response);
+            //     //grava log
+            //     //$decoded = json_decode($response, true);
+            //     ob_start();
+            //     var_dump($response);
+            //     $input = ob_get_contents();
+            //     ob_end_clean();
+            //     file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+            //     exit;        
+            //     // return print_r($response);    
+            // }
         }catch(WebhookReadErrorException $e){
-                echo '<pre>';
-                print $e->getMessage();
+                // echo '<pre>';
+                // print $e->getMessage();
             }
         catch(NotaFiscalNaoCadastradaException $e){
-            echo '<pre>';
-            print $e->getMessage();       
+            // echo '<pre>';
+            // print $e->getMessage();       
         }
         catch(NotaFiscalNaoCanceladaException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }catch(PDOException $e){
-            echo '<pre>';
-            print $e->getMessage();
+            // echo '<pre>';
+            // print $e->getMessage();
         }
         finally{
             if(isset($e)){
@@ -166,11 +165,11 @@ class InvoicingController extends Controller {
                 $input = ob_get_contents();
                 ob_end_clean();
                 file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit; 
-            }           
+                
+                return print $e->getMessage();
+            }    
+            return print_r($response);       
         }
-
-
 
     }
 

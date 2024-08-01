@@ -4,6 +4,9 @@ namespace src\services;
 
 use src\contracts\OmieManagerInterface;
 use src\functions\DiverseFunctions;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\CurlFactory;
+use GuzzleHttp\Handler\CurlHandler;
 
 class OmieServices implements OmieManagerInterface{
 
@@ -89,7 +92,7 @@ class OmieServices implements OmieManagerInterface{
 
         $cliente = json_decode($response);
         $idClienteOmie = $cliente->clientes_cadastro[0]->codigo_cliente_omie;
-
+        
         return $idClienteOmie;
     }
 
@@ -196,7 +199,7 @@ class OmieServices implements OmieManagerInterface{
     }
 
     //CRIA PEDIDO NO OMIE
-    public function criaPedidoOmie(object $omie, string $idClienteOmie, object $deal, array $productsOrder, string $codVendedorOmie, string $notes, array $arrayRequestOrder, string $parcelamento)
+    public function criaPedidoOmie(object $omie, string $idClienteOmie, object $deal, array $productsOrder, string $codVendedorOmie, string $notes, string $parcelamento)
     {   
         //$det = [];//informações dos produtos da venda(array de arrays)
         //$ide=[];//array de informações do produto vai dentro do array det com por exemplo codigo_item_integracao(codigo do item no ploomes)
@@ -248,10 +251,9 @@ class OmieServices implements OmieManagerInterface{
         $informacoes_adicionais['codigo_conta_corrente'] = $omie->ncc;//int
         // $informacoes_adicionais['consumidor_final'] = 'S';//string
         // $informacoes_adicionais['enviar_email'] = 'N';//string
-        $informacoes_adicionais['numero_pedido_cliente']=$deal->lastOrderId;
+        $informacoes_adicionais['numero_pedido_cliente']=$deal->numPedidoCliente ?? "0";
         $informacoes_adicionais['codVend']=$codVendedorOmie;
-        $informacoes_adicionais['numero_pedido_cliente']=$deal->lastOrderId;
-        //$informacoes_adicionais['codproj']=3683391891;
+        $informacoes_adicionais['codproj']= $omie->codProjeto ?? null;
 
         //lista parcelas
         //$lista_parcelas = [];//array de parcelas
@@ -272,34 +274,26 @@ class OmieServices implements OmieManagerInterface{
         $newPedido['observacoes'] = $observacoes;
         $top['param'][]= $newPedido;
 
-        $jsonPedido = json_encode($top, JSON_UNESCAPED_UNICODE);
-        print_r($jsonPedido);
-        exit;
+        // $jsonPedido = json_encode($top, JSON_UNESCAPED_UNICODE);
+        // print_r($jsonPedido);
+        // exit;
 
         // $jsonOmie = json_encode($jsonOmie,JSON_UNESCAPED_UNICODE);
+        $client = new Client([
+            'handler' => new CurlHandler([
+                 'handle_factory' => new CurlFactory(0)
+            ])
+        ]);
 
-        $curl = curl_init();
+        $response = $client->post('https://app.omie.com.br/api/v1/produtos/pedido/',[
+            "json" => $top
+        ]);
+        //$code = $response->getStatusCode();
+        $body = json_decode($response->getBody(),true); 
+      
+        return $body;
 
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://app.omie.com.br/api/v1/produtos/pedido/',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => $jsonPedido,
-            CURLOPT_HTTPHEADER => array(
-                'Content-Type: application/json'
-            ),
-        ));
-
-        $response = curl_exec($curl);
-
-        curl_close($curl);
-
-        return json_decode($response);
+        
     }
 
     // busca o pedido através do Id do OMIE
@@ -384,5 +378,50 @@ class OmieServices implements OmieManagerInterface{
         $nfe = json_decode($response, true);
         return $nfe['ide']['nNF'];
     }
+    // busca o pedido através do Id do OMIE
+    public function buscaIdProjetoOmie(object $omie, string $projetoName)
+    {
+        $array = [
+                    'app_key'=>$omie->appKey,
+                    'app_secret'=>$omie->appSecret,
+                    'call'=>'ListarProjetos',
+                    'param'=>[
+                            [
+                                'apenas_importado_api'=> 'N',
+                                'nome_projeto'=> $projetoName
+                            ]
+                        ]
+                ];
+
+        $json = json_encode($array);
+        
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://app.omie.com.br/api/v1/geral/projetos/',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $json,
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $projeto = json_decode($response, true);
+
+        return ($projeto['registros'] <= 0 || $projeto['cadastro'][0]['inativo'] === 'S') ? false : $projeto['cadastro'][0]['codigo'];
+
+
+
+    } 
   
 }

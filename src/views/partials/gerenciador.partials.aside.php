@@ -3,7 +3,7 @@
         <h4>Operações</h4>
         <ul>
             <li><a  href="<?=$base?>/">Dashboard</a></li>
-            <!-- <li><a  href="<?=$base?>/interactions">Iterações</a></li> -->
+            <li><a  href="<?=$base?>/interactions">Iterações</a></li>
             <li><a  href="<?=$base?>/deals">Deals</a></li>
             
             <?php if(in_array('register_integration', $loggedUser->permission)):?>

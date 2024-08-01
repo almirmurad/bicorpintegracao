@@ -110,7 +110,7 @@ class InvoiceHandler
                 //salva o faturamento no banco MHL
                 $idInvoicing = $this->databaseServices->saveInvoicing($invoicing); 
                 switch($invoicing->target){
-                    case 'HML':
+                    case 'MHL':
                         $target = 'Homologacao';
                         break;
                     case 'MPR':
@@ -122,7 +122,7 @@ class InvoiceHandler
                 }
                 $message['saveInvoicing'] = 'Novo faturamento armazenado na base de '.$target.' id: '.$idInvoicing;
                 
-            }catch(FaturamentoNaoCadastradoException $e){          
+            }catch(PDOException $e){          
                 throw new FaturamentoNaoCadastradoException('NOTA FISCAL NÚMERO '.intval($nfe).' JÁ FOI CADASTRADA NA BASE DE DADOS E NÃO PODE SER REPITIDA!'.$e->getMessage(),1021);
             }
 
@@ -136,7 +136,8 @@ class InvoiceHandler
                 'contactId' => $deal['contact_id'],
                 'dealId'=> $deal['deal_id'],
             ];
-
+            $frase = 'Interação de nota fiscal emitida adicionada no card '.$deal['deal_Id'] .' em: '.$current;
+            $stage = ['StageId'=> 40042597];
         }elseif(empty($deal) && !empty($cnpjClient)){
             //busca o contact_id artravés do cnpj do cliente do omie
             $contactId = $this->ploomesServices->consultaClientePloomesCnpj($cnpjClient);
@@ -145,6 +146,8 @@ class InvoiceHandler
                 'contactId' =>$contactId,
                 'dealId'=> null,
             ];
+            $frase = 'Interação de nota fiscal adicionada no cliente '. $contactId .' em: '.$current;
+
         }
         else{
 
@@ -162,11 +165,14 @@ class InvoiceHandler
             'Content'=> 'Nota Fiscal ('. intval($nfe).') emitida no Omie ERP.',
         ];
         //Cria interação no card específico 
-        ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))? $message['addInteraction'] = 'Interação de nota fiscal emitida adicionada no card '.$deal['dealId'] .' em: '.$current : throw new InteracaoNaoAdicionadaException('Não foi possível adicionar a interação de nota fiscal emitida no card, possívelmente a venda foi criada direto no omie - '.$current,1025);
+        ($this->ploomesServices->createPloomesIteraction(json_encode($msg)))? $message['addInteraction'] = $frase : throw new InteracaoNaoAdicionadaException('Não foi possível adicionar a interação de nota fiscal emitida no card, possívelmente a venda foi criada direto no omie - '.$current,1025);
         //muda a etapa da venda específica para NF-Emitida stage Id 40042597
-        $stage = ['StageId'=> 40042597];
-        ($this->ploomesServices->alterStageOrder(json_encode($stage), $idPedidoIntegracao))? $message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda. Possivelmente a venda foi criada direto no Omie',1026);
 
+        if(isset($stage)){
+            ($this->ploomesServices->alterStageOrder(json_encode($stage), $idPedidoIntegracao))? $message['alterStage'] = 'Estágio da venda alterado com sucesso': throw new EstagiodavendaNaoAlteradoException('Não foi possível alterar o estágio da venda. Possivelmente a venda foi criada direto no Omie',1026);
+        }
+        
+        
         return $message;
     }
 

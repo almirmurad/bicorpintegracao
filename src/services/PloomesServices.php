@@ -24,7 +24,10 @@ class PloomesServices implements PloomesManagerInterface{
     //ENCONTRA A PROPOSTA NO PLOOMES
     public function requestQuote(object $deal):array
     {
-        $query = 'Quotes?$expand=Installments,OtherProperties,Products($select=Id,Discount),Approvals($select=Id),ExternalComments($select=Id),Comments($select=Id),Template,Deal($expand=Pipeline($expand=Icon,Gender,WinButton,WinVerb,LoseButton,LoseVerb),Stage,Contact($expand=Phones;$select=Name,TypeId,Phones),Person($expand=Phones;$select=Name,TypeId,Phones),OtherProperties),Pages&$filter=Id+eq+'.$deal->lastQuoteId.'&preload=true';
+        /**
+         * Quotes?$expand=Installments,OtherProperties,Products($select=Id,Discount),Approvals($select=Id),ExternalComments($select=Id),Comments($select=Id),Template,Deal($expand=Pipeline($expand=Icon,Gender,WinButton,WinVerb,LoseButton,LoseVerb),Stage,Contact($expand=Phones;$select=Name,TypeId,Phones),Person($expand=Phones;$select=Name,TypeId,Phones),OtherProperties),Pages&$filter=Id+eq+'.$deal->lastQuoteId.'&preload=true
+         */
+        $query = 'Quotes?$expand=Installments,OtherProperties,Products($select=Id,ProductId,ProductName,Quantity,Discount,UnitPrice,Total,Ordination),Products($expand=Product($select=Code,MeasurementUnit))&$filter=Id+eq+'.$deal->lastQuoteId.'&preload=true';
 
         $curl = curl_init();
 
@@ -45,7 +48,7 @@ class PloomesServices implements PloomesManagerInterface{
 
         curl_close($curl);
 
-        $quote = json_decode($response, true);
+        $quote = json_decode($response, true);     
 
         return $quote['value'][0];
 
@@ -75,7 +78,7 @@ class PloomesServices implements PloomesManagerInterface{
 
         $responseCnpj = json_decode($responseCnpj, true);
 
-        $response = (!empty($responseCnpj['value'][0]['CNPJ'])) ? $responseCnpj['value'][0]['CNPJ'] : $responseCnpj['value'][0]['CPF'];
+        $response = (!empty($responseCnpj['value'][0]['CNPJ'])) ? $responseCnpj['value'][0]['CNPJ'] : false;
         
         return $response;
     }
@@ -103,7 +106,7 @@ class PloomesServices implements PloomesManagerInterface{
 
         $responseMail = json_decode($responseMail, true);
 
-        $response = $responseMail['value'][0]['Email'];
+        $response = $responseMail['value'][0]['Email'] ?? false;
         
         return $response;
     }

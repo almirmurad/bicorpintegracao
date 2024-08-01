@@ -14,8 +14,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let ajax = new XMLHttpRequest();//instancia o ajax
 
-    ajax.open('GET','http://localhost/bicorpIntegracao/public/dashboard');//envia requisição
-    //ajax.open('GET','https://fiel.bicorp.online/public/dashboard');//envia requisição
+    //ajax.open('GET','http://localhost/bicorpIntegracao/public/dashboard');//envia requisição
+    ajax.open('GET','https://fiel.bicorp.online/public/dashboard');//envia requisição
 
     ajax.onreadystatechange = ()=>{
 

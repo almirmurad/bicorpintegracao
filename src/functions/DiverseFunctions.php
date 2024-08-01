@@ -68,6 +68,9 @@ class DiverseFunctions{
 
     public static function getIdParcelamento ($parcelamento)
     {
+        if($parcelamento == "0"){
+            $parcelamento = 'a vista';
+        }
         $intervalo = [
             'a vista'=>'000',
             '14'=>'A14',
@@ -84,6 +87,7 @@ class DiverseFunctions{
             '28/35/42'=>'S05',      
             '28/42/49'=>'U53',       
             '7'=>'A07',
+            '7/14'=>'S20',
         ];
         return $intervalo[$parcelamento];       
     }

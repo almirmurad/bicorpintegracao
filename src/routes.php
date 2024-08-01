@@ -22,6 +22,7 @@ $router->get('/delHook/{id}', 'IntegracaoController@delHook');
 $router->get('/deals', 'DealController@index');
 $router->post('/winDeal', 'DealController@winDeal');
 $router->post('/deletedDeal', 'DealController@deletedDeal');
+$router->post('/processWinDeal', 'DealController@processWinDeal');
 
 //Orders
 $router->post('/newOmieOrder', 'OrderController@newOmieOrder');//novo pedido no omie
