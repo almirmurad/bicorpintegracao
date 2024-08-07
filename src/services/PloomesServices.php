@@ -22,7 +22,7 @@ class PloomesServices implements PloomesManagerInterface{
     }
 
     //ENCONTRA A PROPOSTA NO PLOOMES
-    public function requestQuote(object $deal):array
+    public function requestQuote(object $deal):array|null
     {
         /**
          * Quotes?$expand=Installments,OtherProperties,Products($select=Id,Discount),Approvals($select=Id),ExternalComments($select=Id),Comments($select=Id),Template,Deal($expand=Pipeline($expand=Icon,Gender,WinButton,WinVerb,LoseButton,LoseVerb),Stage,Contact($expand=Phones;$select=Name,TypeId,Phones),Person($expand=Phones;$select=Name,TypeId,Phones),OtherProperties),Pages&$filter=Id+eq+'.$deal->lastQuoteId.'&preload=true
@@ -79,7 +79,7 @@ class PloomesServices implements PloomesManagerInterface{
         $responseCnpj = json_decode($responseCnpj, true);
 
         $response = (!empty($responseCnpj['value'][0]['CNPJ'])) ? $responseCnpj['value'][0]['CNPJ'] : false;
-        
+       
         return $response;
     }
 
@@ -112,7 +112,7 @@ class PloomesServices implements PloomesManagerInterface{
     }
 
     //encontra a venda no ploomes
-    public function requestOrder(object $deal):array
+    public function requestOrder(object $deal):array|null
     {
 
         $curl = curl_init();

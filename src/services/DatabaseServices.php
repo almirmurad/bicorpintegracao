@@ -6,6 +6,7 @@ use Exception;
 use PDOException;
 use src\contracts\DatabaseManagerInterface;
 use src\exceptions\FaturamentoNaoCadastradoException;
+use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\WebhookReadErrorException;
 use src\models\Deal;
 use src\models\Homologacao_invoicing;
@@ -41,10 +42,10 @@ class DatabaseServices implements DatabaseManagerInterface{
         
     }
     //BUSCA NO BANCO DE DADOS INFORMAÇÕES DO WEBHOOK A SER PROCESSADO.
-    public function getWebhook($status){
+    public function getWebhook($status, $entity){
         try{
-            $hook = Webhook::select()->where('status', $status)->orderBy('created_at')->one();
-            return (!$hook ? throw new WebhookReadErrorException('Não existem processos pendentes no momento. Data: '.date('d/m/Y H:i:s').PHP_EOL, 552) : $hook);
+            $hook = Webhook::select()->where('status', $status)->where('entity',$entity)->orderBy('created_at')->one();
+            return (!$hook ? throw new WebhookReadErrorException('Não existem '.$entity.' pendentes a serem processados no momento. Data: '.date('d/m/Y H:i:s').PHP_EOL, 552) : $hook);
             return $hook;
         }catch(PDOException $e){
             throw new WebhookReadErrorException('Erro ao buscar o webhook na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
@@ -184,7 +185,8 @@ class DatabaseServices implements DatabaseManagerInterface{
 
         }
         catch(PDOException $e){
-            throw new WebhookReadErrorException('Erro ao gravar a venda na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+
+            throw new PedidoDuplicadoException('Erro ao gravar a venda na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
         }
 
         

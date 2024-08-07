@@ -16,6 +16,11 @@ $headers = [
     
     'Content-Type: application/json',
 ];
+$array = [
+    'status'=>'1',
+    'entity'=>'Deals'
+];
+$json = json_encode($array);
 $uri = 'https://fiel.bicorp.online/public/processWinDeal';
 
 $curl = curl_init();
@@ -29,7 +34,7 @@ $curl = curl_init();
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS =>1,
+            CURLOPT_POSTFIELDS =>$json,
             CURLOPT_HTTPHEADER => $headers
 
         ));

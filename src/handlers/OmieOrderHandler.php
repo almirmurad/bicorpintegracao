@@ -38,7 +38,7 @@ class OmieOrderHandler
         $current = $this->current;
         $message = [];
         
-        //decodifica o json de pedidos vindos do webhook
+        //decodifica o json de pedidos do webhook
         $decoded = json_decode($json, true);
 
         if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" && $decoded['event']['usuarioInclusao'] !== 'WEBSERVICE'){
@@ -477,8 +477,8 @@ class OmieOrderHandler
 
             $orderId = $decoded['event']['codIntPedido'];
             $omie->lastOrderId = $orderId;
-            $orderPloomes = $this->ploomesServices->requestOrder($orderId);
-            if($orderPloomes[0]->Id == $orderId){
+            $orderPloomes = $this->ploomesServices->requestOrder($omie);
+            if($orderPloomes !== null && $orderPloomes[0]->Id == $orderId){
                 
                 $stageId= ['StageId'=>40011765];
                 $stage = json_encode($stageId);

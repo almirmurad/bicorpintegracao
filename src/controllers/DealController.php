@@ -77,7 +77,7 @@ class DealController extends Controller {
                 $message = [];
                 $message =[
                     'status_code' => 200,
-                    'status_message' => 'Success: '. $response['msg'],
+                    'status_message' => 'SUCCESS: '. $response['msg'],
                 ];
                 
             }
@@ -85,12 +85,19 @@ class DealController extends Controller {
         }
         finally{
             if(isset($e)){
+                $message = [];
+                $message =[
+                    'status_code' => 500,
+                    'status_message' => $e->getMessage(),
+                ];
+
                 ob_start();
                 var_dump($e->getMessage());
                 $input = ob_get_contents();
                 ob_end_clean();
                 file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
-                return print $e->getMessage();
+
+                return print 'ERROR:'. $message['status_code'].'. MESSAGE: ' .$message['status_message'];
             }
              //grava log
              ob_start();
@@ -162,8 +169,11 @@ class DealController extends Controller {
     }
     
     public function processWinDeal(){
-        $status = file_get_contents('php://input');
-        
+        $json = file_get_contents('php://input');
+        $decoded = json_decode($json,true);
+
+        $status = $decoded['status'];
+        $entity = $decoded['entity'];
     
         /**
          * processa o webhook 
@@ -172,7 +182,7 @@ class DealController extends Controller {
         try{
             
             $dealHandler = new DealHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
-            $response = $dealHandler->startProcess($status);
+            $response = $dealHandler->startProcess($status, $entity);
 
             $message = [];
             $message =[
@@ -189,46 +199,27 @@ class DealController extends Controller {
             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
             //return $message['status_message'];
         
-        }catch(WebhookReadErrorException $e){
-            // echo '<pre>';
-            // print $e->getMessage();           
+        }catch(WebhookReadErrorException $e){                      
         }
-        catch(BaseFaturamentoInexistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(BaseFaturamentoInexistenteException $e){           
         }
-        catch(CnpjClienteInexistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(CnpjClienteInexistenteException $e){           
         }
-        catch(PedidoInexistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(PedidoInexistenteException $e){           
         }
-        catch(ProdutoInexistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(ProdutoInexistenteException $e){           
         }
-        catch(ClienteInexistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(ClienteInexistenteException $e){           
         }
-        catch(VendedorInexistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(VendedorInexistenteException $e){           
         }
-        catch(PedidoRejeitadoException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
-        }catch(PropostaNaoEncontradaException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
-        }catch(ProjetoNaoEncontradoException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
-        }catch(EmailVendedorNaoExistenteException $e){
-            // echo '<pre>';
-            // print $e->getMessage();
+        catch(PedidoRejeitadoException $e){           
+        }
+        catch(PropostaNaoEncontradaException $e){           
+        }
+        catch(ProjetoNaoEncontradoException $e){           
+        }
+        catch(EmailVendedorNaoExistenteException $e){           
         }
         finally{
             if(isset($e)){
@@ -244,9 +235,9 @@ class DealController extends Controller {
                     'status_message' => $e->getMessage(),
                 ];
                
-                return print 'ERROR: '.$message['status_code'].' MENSAGEM: '.$message['status_message'];
+                return print 'ERROR: '.$message['status_code'].' MESSAGE: '.$message['status_message'];
                }
-
+    
             return print $message['status_message']['winDeal']['interactionMessage'];
         }
 

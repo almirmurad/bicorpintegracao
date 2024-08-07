@@ -10,38 +10,34 @@ use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\PedidoInexistenteException;
 use src\exceptions\PedidoNaoExcluidoException;
 use src\exceptions\WebhookReadErrorException;
+use src\handlers\ClientHandler;
 use src\handlers\ClientPloomesHandler;
 use src\handlers\LoginHandler;
 use src\handlers\OmieOrderHandler;
+use src\services\DatabaseServices;
+use src\services\OmieServices;
+use src\services\PloomesServices;
 
 class ClientController extends Controller {
     
     private $loggedUser;
-    private $apiKey;
-    private $baseApi;
-    private $clientPloomesHandler;
-
+    private $ploomesServices;
+    private $omieServices;
+    private $databaseServices;
 
     public function __construct()
     {
-        
-        
-        // if($_SERVER['REQUEST_METHOD'] == "POST"){
-
-        //     print_r($_SERVER);
-        //     print_r($_SERVER['HTTP_TOKEN']);
-        //     exit;
-        // }
-          if($_SERVER['REQUEST_METHOD'] !== "POST"){
+        if($_SERVER['REQUEST_METHOD'] !== "POST"){
             $this->loggedUser = LoginHandler::checkLogin();
             if ($this->loggedUser === false) {
                 $this->redirect('/login');
             }
-          }
-        $this->apiKey = $_ENV['API_KEY'];
-        $this->baseApi = $_ENV['BASE_API'];
-        $this->clientPloomesHandler = new ClientPloomesHandler;
-   
+        }
+
+        $this->ploomesServices = new PloomesServices();
+        $this->omieServices = new OmieServices();
+        $this->databaseServices = new DatabaseServices();
+
     }
 
     public function index() {
@@ -64,151 +60,115 @@ class ClientController extends Controller {
         ob_end_clean();
         file_put_contents('./assets/contacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
 
-        print_r($json);exit;
-
         try{
+            $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $clienteHandler->saveClientHook($json);
+            
+            if ($response > 0) {
 
-            $response = json_encode(ClientPloomesHandler::newClient($json, $this->apiKey, $this->baseApi, $this->clientPloomesHandler ));
-            if ($response) {
-                echo"<pre>";
-                json_encode($response);
-                //grava log
-                //$decoded = json_decode($response, true);
-                ob_start();
-                var_dump($response);
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
+                $message = [];
+                $message =[
+                    'status_code' => 200,
+                    'status_message' => 'Success: '. $response['msg'],
+                ];
+                
             }
 
-        }catch(PedidoDuplicadoException $e){
-            echo $e->getMessage();
-        }catch(OrderControllerException $e){
-            echo $e->getMessage();
-        }catch(ContactIdInexistentePloomesCRM $e){
-            echo $e->getMessage();
-        }catch(InteracaoNaoAdicionadaException $e){
-            echo $e->getMessage();
-        }finally{
-            if (isset($e)){
+        }catch(WebhookReadErrorException $e){        
+        }
+        finally{
+            if(isset($e)){
                 ob_start();
-                echo $e->getMessage();
+                var_dump($e->getMessage());
                 $input = ob_get_contents();
                 ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit; 
+                file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                return print $e->getMessage();
             }
-            exit;
-            //return print_r($response);
+             //grava log
+             ob_start();
+             print_r($message);
+             $input = ob_get_contents();
+             ob_end_clean();
+             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+             
+             return print $message['status_message'];
+           
         }
             
     }
 
-    public function deletedOrder(){
+    public function processNewContact(){
         $json = file_get_contents('php://input');
-            //$decoded = json_decode($json, true);
+        $decoded = json_decode($json,true);
 
-            ob_start();
-            var_dump($json);
-            $input = ob_get_contents();
-            ob_end_clean();
-
-            file_put_contents('./assets/whkDelOrder.log', $input . PHP_EOL, FILE_APPEND);
-            // $pong = array("pong"=>true);
-            // $json = json_encode($pong);
-            // return print_r($json);
+        $status = $decoded['status'];
+        $entity = $decoded['entity'];
+    
+        /**
+         * processa o webhook 
+         */
 
         try{
+            
+            $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $clienteHandler->startProcess($status, $entity);
 
-            $response = json_encode(OmieOrderHandler::deletedOrder($json, $this->apiKey, $this->baseApi));
-            if ($response) {
-                echo"<pre>";
-                json_encode($response);
-                //grava log
-                //$decoded = json_decode($response, true);
-                ob_start();
-                var_dump($response);
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
-            }
-
-        }catch(PedidoInexistenteException $e){
-            echo $e->getMessage();
-        }catch(PedidoCanceladoException $e){
-            echo $e->getMessage();
-        }catch(PedidoNaoExcluidoException $e){
-            echo $e->getMessage();
-        }
-        catch(PedidoDuplicadoException $e){
-            echo $e->getMessage();
-        }catch(OrderControllerException $e){
-            echo $e->getMessage();
-        }catch(ContactIdInexistentePloomesCRM $e){
-            echo $e->getMessage();
-        }catch(InteracaoNaoAdicionadaException $e){
-            echo $e->getMessage();
-        }finally{
-            if (isset($e)){
-                ob_start();
-                echo $e->getMessage();
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-                exit; 
-            }
-            return print_r($response);
-            exit;
-        }
-
-
-    }
-
-    public function alterOrderStage(){
-        $json = file_get_contents('php://input');
-            //$decoded = json_decode($json, true);
-
+            $message = [];
+            $message =[
+                'status_code' => 200,
+                'status_message' => $response,
+            ];
+                
+             
+            //grava log
             ob_start();
-            var_dump($json);
+            print_r($message);
             $input = ob_get_contents();
             ob_end_clean();
-
-            file_put_contents('./assets/whkAlterStageOrder.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
-            // $pong = array("pong"=>true);
-            // $json = json_encode($pong);
-            // return print_r($json);
-
-        try{
-            $response = json_encode(OmieOrderHandler::alterOrderStage($json, $this->apiKey, $this->baseApi, $this->omieOrderHandler));
-            if ($response) {
-                echo"<pre>";
-                json_encode($response);
-                //grava log
-                //$decoded = json_decode($response, true);
-                ob_start();
-                var_dump($response);
-                $input = ob_get_contents();
-                ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);  
-            }
-
+            file_put_contents('./assets/logClient.log', $input . PHP_EOL, FILE_APPEND);
+            //return $message['status_message'];
+        
         }catch(WebhookReadErrorException $e){
-            echo $e->getMessage();
-        }catch(InteracaoNaoAdicionadaException $e){
-            echo $e->getMessage();
-        }finally{
-            if (isset($e)){
+                
+        }
+        finally{
+            if(isset($e)){
                 ob_start();
-                echo $e->getMessage();
+                var_dump($e->getMessage());
                 $input = ob_get_contents();
                 ob_end_clean();
-                file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
-            }
+                file_put_contents('./assets/logClient.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                //print $e->getMessage();
+                $message = [];
+                $message =[
+                    'status_code' => 500,
+                    'status_message' => $e->getMessage(),
+                ];
+               
+                return print 'ERROR: '.$message['status_code'].' MENSAGEM: '.$message['status_message'];
+               }
+
+            return print $message['status_message']['contactsCreate']['interactionMessage'];
         }
-        return print_r($response);
-        exit;
+
+    } 
+
+
+    public function alterClientPLoomes(){
+
+
+        $json = file_get_contents('php://input');
+
+        ob_start();
+        var_dump($json);
+        $input = ob_get_contents();
+        ob_end_clean();
+        file_put_contents('./assets/alterContacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
 
     }
+
+
 
 
 }

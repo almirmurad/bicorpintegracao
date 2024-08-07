@@ -7,6 +7,7 @@ use src\functions\DiverseFunctions;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\CurlFactory;
 use GuzzleHttp\Handler\CurlHandler;
+use src\exceptions\WebhookReadErrorException;
 
 class OmieServices implements OmieManagerInterface{
 
@@ -56,6 +57,8 @@ class OmieServices implements OmieManagerInterface{
     //PEGA O ID DO CLIENTE DO OMIE
     public function clienteIdOmie($omie, $contactCnpj)
     {
+        
+        
         $jsonOmieIdCliente = [
             'app_key' => $omie->appKey,
             'app_secret' => $omie->appSecret,
@@ -90,8 +93,14 @@ class OmieServices implements OmieManagerInterface{
 
         curl_close($curl);
 
-        $cliente = json_decode($response);
-        $idClienteOmie = $cliente->clientes_cadastro[0]->codigo_cliente_omie;
+        $cliente = json_decode($response, true);
+        
+        $idClienteOmie = $cliente['clientes_cadastro'][0]['codigo_cliente_omie'];
+// if(isset($omie->reprocess) && $omie->reprocess == 1){
+//             print 'estamos no reprocess';
+//             print_r($idClienteOmie);
+//             exit;
+//         }
         
         return $idClienteOmie;
     }
@@ -134,22 +143,23 @@ class OmieServices implements OmieManagerInterface{
 
         curl_close($curl);
        
-        $vendedor = json_decode($response);
+        $vendedor = json_decode($response,true);
+       
         $codigoVendedor = '';
-        $arrayVendedores = $vendedor->cadastro;
+        $arrayVendedores = $vendedor['cadastro'];
         if(count($arrayVendedores) > 1){
             foreach($arrayVendedores as $itArrVend){
             
-                if($itArrVend->inativo && $itArrVend->inativo === 'N'){
-                    $codigoVendedor = $itArrVend->codigo;
+                if($itArrVend['inativo'] && $itArrVend['inativo'] === 'N'){
+                    $codigoVendedor = $itArrVend['codigo'];
                 }
             }
         }else{
             foreach($arrayVendedores as $itArrVend){
-                    $codigoVendedor = $itArrVend->codigo;
+                    $codigoVendedor = $itArrVend['codigo'];
             }
         }
-        
+   
         return $codigoVendedor;
     }
 
@@ -377,6 +387,86 @@ class OmieServices implements OmieManagerInterface{
         
         $nfe = json_decode($response, true);
         return $nfe['ide']['nNF'];
+    }
+    //Cria cliente no Omie ERP
+    public function criaClienteOmie(object $omie, object $contact)
+    {
+        $array = [
+            'app_key'=>$omie->appKey,
+            'app_secret'=>$omie->appSecret,
+            'call'=>'IncluirCliente',
+            'param'=>[]
+        ];
+ 
+        $clienteJson = [];
+        $clienteJson['codigo_cliente_integracao'] = $contact->id;
+        $clienteJson['razao_social'] = $contact->name;
+        $clienteJson['nome_fantasia'] = $contact->legalName ?? null;
+        $clienteJson['cnpj_cpf'] = $contact->cnpj ?? $contact->cpf;
+        $clienteJson['email'] = $contact->email;
+        $clienteJson['endereco'] = $contact->streetAddress;
+        $clienteJson['endereco_numero'] = $contact->streetAddressNumber;
+        $clienteJson['bairro'] = $contact->neighborhood;
+        $clienteJson['complemento'] = $contact->streetAdressLine2 ?? null;
+        // $clienteJson['estado'] = $contact->streetAdress ?? null;
+        $clienteJson['estado'] = null;//usar null para teste precisa pegar o codigo da sigla do estado na api omie
+        // $clienteJson['cidade'] = $contact->streetAdress ?? null;
+        $clienteJson['cidade'] = null;
+        // $clienteJson['cep'] = $contact->streetAdress ?? null;
+        $clienteJson['cep'] = $contact->zipcode ?? null;
+        $clienteJson['cnae'] = null;
+        $clienteJson['recomendacoes'] =[];
+        $recomendacoes=[];
+        $recomendacoes['codigo_vendedor'] = 6950208908;//$contact->ownerId;
+        $clienteJson['recomendacoes'][] = $recomendacoes;
+
+        $caracteristicas = [];
+        //$caracteristicasCampo=[];
+        //$caracteristicasConteudo=[];
+        $caracteristicasCampo = 'Regiao';
+        $caracteristicasConteudo = $contact->regiao;
+        $caracteristicas['campo'] = $caracteristicasCampo;
+        $caracteristicas['conteudo']=$caracteristicasConteudo;
+        $clienteJson['caracteristicas'] = $caracteristicas;
+
+        $clienteJson['tags']=[];
+        $tag['tag'] = [];
+        $tag1['tag'] = 'Cliente';
+        $tag2['tag'] = 'Fornecedor';
+        $t = [];
+        $t[] = $tag1;
+        $t[] = $tag2;
+        $clienteJson['tags']=$t;
+       
+        $array['param'][] = $clienteJson;
+
+        $json = json_encode($array);     
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://app.omie.com.br/api/v1/geral/clientes/',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $json,
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $cliente = json_decode($response, true);
+
+        return $cliente;
+
     }
     // busca o pedido através do Id do OMIE
     public function buscaIdProjetoOmie(object $omie, string $projetoName)
