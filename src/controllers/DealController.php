@@ -80,7 +80,16 @@ class DealController extends Controller {
                     'status_message' => 'SUCCESS: '. $response['msg'],
                 ];
                 
+            }else{
+
+                $message = [];
+                $message =[
+                    'status_code' => 200,
+                    'status_message' => 'SUCCESS: '. $response['msg'],
+                ];
+
             }
+
         }catch(WebhookReadErrorException $e){        
         }
         finally{

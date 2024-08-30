@@ -8,6 +8,7 @@ use src\contracts\DatabaseManagerInterface;
 use src\exceptions\FaturamentoNaoCadastradoException;
 use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\WebhookReadErrorException;
+use src\models\Cliente;
 use src\models\Deal;
 use src\models\Homologacao_invoicing;
 use src\models\Homologacao_order;
@@ -30,6 +31,7 @@ class DatabaseServices implements DatabaseManagerInterface{
                     'json'=>$webhook->json,
                     'status'=>$webhook->status,
                     'result'=>$webhook->result,
+                    'origem'=>$webhook->origem,
                     'created_at'=>date("Y-m-d H:i:s"),
                     ]
             )->execute();
@@ -65,6 +67,7 @@ class DatabaseServices implements DatabaseManagerInterface{
         
 
         try{
+            //Cliente::update()
             Webhook::update()
             ->set('status', $statusId)
             ->set('result', $status[$statusId])
@@ -379,6 +382,18 @@ class DatabaseServices implements DatabaseManagerInterface{
         }catch(PDOException $e){
             return $e->getMessage();
         }
+    }
+
+    public function getClient($status){
+        try{
+            $hook = Cliente::select()->where('status', $status)->orderBy('created_at')->one();
+            return (!$hook ? throw new WebhookReadErrorException('Não existem clientes pendentes a serem processados no momento. Data: '.date('d/m/Y H:i:s').PHP_EOL, 552) : $hook);
+            return $hook;
+        }catch(PDOException $e){
+            throw new WebhookReadErrorException('Erro ao buscar o webhook na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
+        }
+
+
     }
 
 

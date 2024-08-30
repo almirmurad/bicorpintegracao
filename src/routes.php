@@ -30,10 +30,14 @@ $router->post('/deletedOrder', 'OrderController@deletedOrder');//Pedido deletado
 $router->post('/alterOrderStage', 'OrderController@alterOrderStage');//Pedido Alterado no kanban de vendas de produtos do omie
 
 
-//clientes
+//clientes ploomes
 $router->post('/newClientPloomes', 'ClientController@newClientPloomes');//Novo cliente no ploomes
 $router->post('/processNewContact', 'ClientController@processNewContact'); //inicia o processo com cron job
-$router->post('/alterClientPLoomes', 'ClientController@alterClientPLoomes'); //recebe um webhhok de cliente alterado no ploomes
+$router->post('/alterClientPloomes', 'ClientController@alterClientPloomes'); //recebe um webhhok de cliente alterado no ploomes
+//clientes Omie
+$router->post('/newClientOmie', 'ClientController@newClientOmie'); //recebe um webhhok de cliente alterado no ploomesproccessAlterClientOmie
+$router->post('/proccessAlterClientOmie', 'ClientController@proccessAlterClientOmie'); //recebe um webhhok de cliente alterado no 
+
 
 
 

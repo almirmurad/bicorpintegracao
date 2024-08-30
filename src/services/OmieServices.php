@@ -96,11 +96,6 @@ class OmieServices implements OmieManagerInterface{
         $cliente = json_decode($response, true);
         
         $idClienteOmie = $cliente['clientes_cadastro'][0]['codigo_cliente_omie'];
-// if(isset($omie->reprocess) && $omie->reprocess == 1){
-//             print 'estamos no reprocess';
-//             print_r($idClienteOmie);
-//             exit;
-//         }
         
         return $idClienteOmie;
     }
@@ -230,9 +225,11 @@ class OmieServices implements OmieManagerInterface{
         $cabecalho = [];//cabeçalho do pedido (array)
         $cabecalho['codigo_cliente'] = $idClienteOmie;//int
         $cabecalho['codigo_pedido_integracao'] = $deal->lastOrderId;//string
-        $cabecalho['data_previsao'] = DiverseFunctions::convertDate($deal->finishDate);//string
+        $cabecalho['data_previsao'] = DiverseFunctions::convertDate($deal->previsaoFaturamento) ?? "";//string
         $cabecalho['etapa'] = '10';//string
         $cabecalho['numero_pedido'] = $deal->lastOrderId;//string
+        //$cabecalho['tipo_desconto_pedido'] = 'P';//string
+        //$cabecalho['perc_desconto_pedido'] = 5;//string
         $cabecalho['codigo_parcela'] = DiverseFunctions::getIdParcelamento($parcelamento);//string'qtde_parcela'=>2
         //$cabecalho['qtde_parcelas'] = $qtdeParcelas;//string=>2
         $cabecalho['origem_pedido'] = 'API';//string
@@ -254,6 +251,7 @@ class OmieServices implements OmieManagerInterface{
         //frete
         $frete = [];//array com infos do frete, por exemplo, modailidade;
         $frete['modalidade'] = '9';//string
+        //$frete['previsao_entrega'] = DiverseFunctions::convertDate($deal->previsaoEntrega);//string
         
         //informações adicionais
         $informacoes_adicionais = []; //informações adicionais por exemplo codigo_categoria = 1.01.03, codigo_conta_corrente = 123456789
@@ -397,28 +395,30 @@ class OmieServices implements OmieManagerInterface{
             'call'=>'IncluirCliente',
             'param'=>[]
         ];
- 
+
         $clienteJson = [];
         $clienteJson['codigo_cliente_integracao'] = $contact->id;
         $clienteJson['razao_social'] = $contact->name;
         $clienteJson['nome_fantasia'] = $contact->legalName ?? null;
         $clienteJson['cnpj_cpf'] = $contact->cnpj ?? $contact->cpf;
         $clienteJson['email'] = $contact->email;
+        $clienteJson['telefone1_ddd'] = $contact->ddd1;
+        $clienteJson['telefone1_numero'] = $contact->phone1;
+        $clienteJson['contato'] = $contact->contato1;
         $clienteJson['endereco'] = $contact->streetAddress;
         $clienteJson['endereco_numero'] = $contact->streetAddressNumber;
         $clienteJson['bairro'] = $contact->neighborhood;
-        $clienteJson['complemento'] = $contact->streetAdressLine2 ?? null;
-        // $clienteJson['estado'] = $contact->streetAdress ?? null;
-        $clienteJson['estado'] = null;//usar null para teste precisa pegar o codigo da sigla do estado na api omie
-        // $clienteJson['cidade'] = $contact->streetAdress ?? null;
-        $clienteJson['cidade'] = null;
+        $clienteJson['complemento'] = $contact->streetAddressLine2 ?? null;
+        $clienteJson['estado'] = $contact->stateShort;//usar null para teste precisa pegar o codigo da sigla do estado na api omie
+        //$clienteJson['cidade'] = $contact->cityName;
+        $clienteJson['cidade_ibge'] = $contact->cityId;
         // $clienteJson['cep'] = $contact->streetAdress ?? null;
-        $clienteJson['cep'] = $contact->zipcode ?? null;
+        $clienteJson['cep'] = $contact->zipCode ?? null;
         $clienteJson['cnae'] = null;
         $clienteJson['recomendacoes'] =[];
-        $recomendacoes=[];
-        $recomendacoes['codigo_vendedor'] = 6950208908;//$contact->ownerId;
-        $clienteJson['recomendacoes'][] = $recomendacoes;
+        //$recomendacoes=[];//vendedor padrão
+        //$recomendacoes['codigo_vendedor'] = $contact->ownerId;
+        //$clienteJson['recomendacoes'][] = $recomendacoes;
 
         $caracteristicas = [];
         //$caracteristicasCampo=[];
@@ -428,16 +428,9 @@ class OmieServices implements OmieManagerInterface{
         $caracteristicas['campo'] = $caracteristicasCampo;
         $caracteristicas['conteudo']=$caracteristicasConteudo;
         $clienteJson['caracteristicas'] = $caracteristicas;
-
-        $clienteJson['tags']=[];
-        $tag['tag'] = [];
-        $tag1['tag'] = 'Cliente';
-        $tag2['tag'] = 'Fornecedor';
-        $t = [];
-        $t[] = $tag1;
-        $t[] = $tag2;
-        $clienteJson['tags']=$t;
-       
+        //$clienteJson['tags']=[];
+        $clienteJson['tags']=$contact->tags;
+         
         $array['param'][] = $clienteJson;
 
         $json = json_encode($array);     
@@ -513,5 +506,65 @@ class OmieServices implements OmieManagerInterface{
 
 
     } 
+
+    public function alteraCliente(object $omie, object $contact){
+
+        
+        $array = [
+            'app_key'=>$omie->appKey,
+            'app_secret'=>$omie->appSecret,
+            'call'=>'AlterarCliente',
+            'param'=>[]
+        ];
+
+        $clienteJson = [];
+        $clienteJson['codigo_cliente_omie'] = $contact->codigoOmie;
+        $caracteristicas = [];
+        //$caracteristicasCampo=[];
+        //$caracteristicasConteudo=[];
+        $caracteristicasCampo = 'Região';
+        $caracteristicasConteudo = $contact->regiao;
+        $caracteristicas['campo'] = $caracteristicasCampo;
+        $caracteristicas['conteudo']=$caracteristicasConteudo;
+        $clienteJson['caracteristicas'] = $caracteristicas;
+        
+         
+        $array['param'][] = $clienteJson;
+
+        $json = json_encode($array);     
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://app.omie.com.br/api/v1/geral/clientes/',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $json,
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+        
+        $cliente = json_decode($response, true);
+        $message = [];
+        if(!isset($cliente['faultstring'])){
+             $message['alterClient']['success'] = $cliente['descricao_status'];
+             return $message;
+        }else{
+            $message['alterClient']['error'] = $cliente['faultstring'];
+            return $message;
+        }
+
+
+    }
   
 }

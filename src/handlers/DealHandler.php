@@ -45,14 +45,26 @@ class DealHandler
 
         $decoded = json_decode($json, true);
 
+        $origem = (!isset($decoded['Entity']))?'Omie':'Ploomes';
+
         //infos do webhook
         $webhook = new Webhook();
         $webhook->json = $json; //webhook 
         $webhook->status = 1; // recebido
         $webhook->result = 'Rececibo';
-        $webhook->entity = $decoded['Entity'] ?? null;
-        //salva o hook no banco
-        return ($id = $this->databaseServices->saveWebhook($webhook)) ? ['id'=>$id, 'msg' =>'Webhook Salvo com sucesso id = '.$id .'às '.date('d/m/Y H:i:s')] : 0;
+        $webhook->entity = $decoded['Entity']??'Deals';
+        $webhook->origem = $origem;
+        if(
+            $decoded['New']['PipelineId'] !== 40053138 || 
+            $decoded['New']['PipelineId'] !== 40034461
+            )
+            {
+
+            //salva o hook no banco
+            return ($id = $this->databaseServices->saveWebhook($webhook)) ? ['id'=>$id, 'msg' =>'Webhook Salvo com sucesso id = '.$id .'às '.date('d/m/Y H:i:s')] : 0;
+        }
+
+        return ['id'=> 0, 'msg' =>'Card '.$decoded['New']['Id'].'Não era proviniente de um funil de vendas às '.date('d/m/Y H:i:s')];
 
     }
 
@@ -175,9 +187,10 @@ class DealHandler
             //$deal->contacts = $decoded['New']['Contacts']; // Contatos relacionados
             //$deal->contactsProducts = $decoded['New']['ContactsProducts']; // Produtos de cliente
             // Base de Faturamento Fiel
-            $deal->baseFaturamento = (isset($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']) && !empty($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']))? $prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'] : $m[] = 'Base de faturamento inexistente';
+             $deal->baseFaturamento = (isset($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']) && !empty($prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C']))? $prop['deal_A965E8F5-EF81-4CF3-939D-1D7FE6F1556C'] : $m[] = 'Base de faturamento inexistente';
             // Base de Faturamento Teste
-            // $deal->baseFaturamento = (isset($prop['deal_70C6418B-B6A9-4026-9A30-C838F3793244']) && !empty($prop['deal_70C6418B-B6A9-4026-9A30-C838F3793244']))? $prop['deal_70C6418B-B6A9-4026-9A30-C838F3793244'] : $m[] = 'Base de faturamento inexistente';
+            //$deal->baseFaturamento = (isset($prop['deal_70C6418B-B6A9-4026-9A30-C838F3793244']) && !empty($prop['deal_70C6418B-B6A9-4026-9A30-C838F3793244']))? $prop['deal_70C6418B-B6A9-4026-9A30-C838F3793244'] : $m[] = 'Base de faturamento inexistente';
+            $deal->previsaoFaturamento = (isset($prop['deal_3D4D7304-3FA7-443F-A5C9-7DCD48214720']) && !empty($prop['deal_3D4D7304-3FA7-443F-A5C9-7DCD48214720']))? $prop['deal_3D4D7304-3FA7-443F-A5C9-7DCD48214720'] : "";//$m[] = 'Previsão de Faturamento inexistente';
 
             // Fim de $prop Outras Propriedades //
             //$deal->products = $decoded['New']['Products']; //Produtos relacionados
@@ -397,10 +410,13 @@ class DealHandler
                 $idPrd = $prdItem['Product']['Code'];              
                 //encontra o id do produto no omie atraves do Code do ploomes (é necessário pois cada base omie tem código diferente pra cada item)
                 (!empty($idProductOmie = $this->omieServices->buscaIdProductOmie($omie, $idPrd))) ? $idProductOmie : $m[] = 'Id do Produto inexistente no Omie ERP. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.'em'.$current;
-                $det['produto']['codigo_produto'] = $idProductOmie;//6879399630;//teste
+                
+                //$det['produto']['codigo_produto_integracao'] =$prdItem['ProductId'];
+                $det['produto']['codigo_produto'] =$idProductOmie;
+                //6879399630;//teste $idProductOmie;//6879399626
                 $det['produto']['quantidade'] = $prdItem['Quantity'];
-                //$det['produto']['tipo_desconto'] = 'P';// precisa ver a questão da porcentagem de descont ainda não fazemos isso
-                //$det['produto']['valor_desconto'] = number_format($prdItem['Discount'], 2, ',', '.');
+                $det['produto']['tipo_desconto'] = 'P';
+                $det['produto']['percentual_desconto'] = $prdItem['Discount'];
                 $det['produto']['valor_unitario'] = $prdItem['UnitPrice'];
                 $det['inf_adic'] = [];
                 $det['inf_adic']['numero_pedido_compra'] = $ocCliente ?? "0";
@@ -410,7 +426,7 @@ class DealHandler
             }
            
              //busca Observação da Proposta (Quote)
-            ($notes = strip_tags($quote['Notes']))? $notes : $notes='Venda à Vista!';
+            $notes = strip_tags($quote['Notes']);
             //busca Parcelamento na Proposta (Quote) obrigatório
             //$quote['OtherProperties'][0]['ObjectValueName']
             ($intervalo = $quote['OtherProperties'][0]['ObjectValueName']) ? $intervalo : $m[] = 'Prazo de pagamento não foi informado na proposta. Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current;
@@ -429,6 +445,7 @@ class DealHandler
             
             //pega o id do cliente do Omie através do CNPJ do contact do ploomes           
              (!empty($codVendedorOmie = $this->omieServices->vendedorIdOmie($omie, $mailVendedor))) ? $codVendedorOmie : $m[] = 'Id do vendedor não encontrado no Omie ERP!Id do card Ploomes CRM: '.$deal->id.' e pedido de venda Ploomes CRM: '.$deal->lastOrderId.' em: '.$current;
+            // $codVendedorOmie = 4216876829;
        
             // busca codigo do Projeto no Omie
             $deal->projeto = ($quoteOtherProperties['quote_C7D17E93-015E-4A36-A011-259534AF0A57']) ?? null;

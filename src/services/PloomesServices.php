@@ -220,4 +220,31 @@ class PloomesServices implements PloomesManagerInterface{
     }
 
 
+ //encontra cliente no ploomes pelo CNPJ
+    public function getClientById(string $id):array|null{
+
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $this->baseApi .'/Contacts?$filter=Id+eq+'.$id.'&$expand=OtherProperties,City,State,Country,Owner($select=Id,Name,Email,Phone),Tags($expand=Tag),Phones($expand=Type)',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => strtoupper($this->method[0]),
+            CURLOPT_HTTPHEADER => $this->headers
+
+        ));
+
+        $response = curl_exec($curl);
+        $response =json_decode($response, true);
+        
+        curl_close($curl);
+
+        return $response['value'][0];
+
+    }
+
 }

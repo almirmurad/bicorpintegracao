@@ -51,14 +51,14 @@ class ClientController extends Controller {
     }
 
     public function newClientPloomes(){
-
+        $message = [];
         $json = file_get_contents('php://input');
 
-        ob_start();
-        var_dump($json);
-        $input = ob_get_contents();
-        ob_end_clean();
-        file_put_contents('./assets/contacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
+        //ob_start();
+        //var_dump($json);
+        //$input = ob_get_contents();
+        //ob_end_clean();
+        //file_put_contents('./assets/contacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
 
         try{
             $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
@@ -66,7 +66,7 @@ class ClientController extends Controller {
             
             if ($response > 0) {
 
-                $message = [];
+                
                 $message =[
                     'status_code' => 200,
                     'status_message' => 'Success: '. $response['msg'],
@@ -101,9 +101,10 @@ class ClientController extends Controller {
     public function processNewContact(){
         $json = file_get_contents('php://input');
         $decoded = json_decode($json,true);
-
+        $message = [];
         $status = $decoded['status'];
         $entity = $decoded['entity'];
+        
     
         /**
          * processa o webhook 
@@ -114,7 +115,7 @@ class ClientController extends Controller {
             $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
             $response = $clienteHandler->startProcess($status, $entity);
 
-            $message = [];
+            
             $message =[
                 'status_code' => 200,
                 'status_message' => $response,
@@ -122,11 +123,11 @@ class ClientController extends Controller {
                 
              
             //grava log
-            ob_start();
+            /*ob_start();
             print_r($message);
             $input = ob_get_contents();
             ob_end_clean();
-            file_put_contents('./assets/logClient.log', $input . PHP_EOL, FILE_APPEND);
+            file_put_contents('./assets/logClient.log', $input . PHP_EOL, FILE_APPEND);*/
             //return $message['status_message'];
         
         }catch(WebhookReadErrorException $e){
@@ -134,13 +135,13 @@ class ClientController extends Controller {
         }
         finally{
             if(isset($e)){
-                ob_start();
+                /*ob_start();
                 var_dump($e->getMessage());
                 $input = ob_get_contents();
                 ob_end_clean();
-                file_put_contents('./assets/logClient.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                file_put_contents('./assets/logClient.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);*/
                 //print $e->getMessage();
-                $message = [];
+                
                 $message =[
                     'status_code' => 500,
                     'status_message' => $e->getMessage(),
@@ -149,22 +150,168 @@ class ClientController extends Controller {
                 return print 'ERROR: '.$message['status_code'].' MENSAGEM: '.$message['status_message'];
                }
 
-            return print $message['status_message']['contactsCreate']['interactionMessage'];
+            $message['status_message']['contactsCreate']['returnContactOmie'];
         }
 
     } 
 
 
-    public function alterClientPLoomes(){
+    public function alterClientPloomes(){
 
 
         $json = file_get_contents('php://input');
 
+       /* ob_start();
+        var_dump($json);
+        $input = ob_get_contents();
+        ob_end_clean();
+        file_put_contents('./assets/alterContacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);*/
+
+
+        try{
+            $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $clienteHandler->saveClientHook($json);
+            
+            if ($response > 0) {
+
+                $message = [];
+                $message =[
+                    'status_code' => 200,
+                    'status_message' => 'Success: '. $response['msg'],
+                ];
+                
+            }
+
+        }catch(WebhookReadErrorException $e){        
+        }
+        finally{
+            if(isset($e)){
+                /*ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);*/
+                return print $e->getMessage();
+            }
+             //grava log
+             /*ob_start();
+             print_r($message);
+             $input = ob_get_contents();
+             ob_end_clean();
+             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);*/
+             
+             return print $message['status_message'];
+           
+        }
+
+    }
+
+    //Omie
+
+    public function newClientOmie(){
+
+        $json = file_get_contents('php://input');
+        $message = [];
         ob_start();
         var_dump($json);
         $input = ob_get_contents();
         ob_end_clean();
-        file_put_contents('./assets/alterContacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
+        file_put_contents('./assets/contacts.log', $input . PHP_EOL . date('d/m/Y H:i:s') . PHP_EOL, FILE_APPEND);
+
+        try{
+            
+            $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            
+            $response = $clienteHandler->saveClientHook($json);
+    
+            
+            if ($response > 0) {
+
+                
+                $message =[
+                    'status_code' => 200,
+                    'status_message' => 'Success: '. $response['msg'],
+                ];
+                
+            }
+
+        }catch(WebhookReadErrorException $e){        
+        }
+        finally{
+            if(isset($e)){
+                ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/log.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);
+                return print $e->getMessage();
+            }
+             //grava log
+             ob_start();
+             print_r($message);
+             $input = ob_get_contents();
+             ob_end_clean();
+             file_put_contents('./assets/log.log', $input . PHP_EOL, FILE_APPEND);
+             
+             return print $message['status_message'];
+           
+        }
+
+    }
+
+    public function proccessAlterClientOmie(){
+
+
+
+        
+        $json = file_get_contents('php://input');
+        $decoded = json_decode($json,true);
+
+        $status = $decoded['status'];
+        $message = [];
+       
+
+        try{
+            
+            $clienteHandler = new ClientHandler($this->ploomesServices, $this->omieServices, $this->databaseServices);
+            $response = $clienteHandler->startAlterClientOmieProcess($status);
+
+            $message =[
+                'status_code' => 200,
+                'status_message' => $response['alterClient']['success'],
+            ];
+                
+             
+            //grava log
+           /* ob_start();
+            print_r($message);
+            $input = ob_get_contents();
+            ob_end_clean();
+            file_put_contents('./assets/logAlterClientOmie.log', $input . PHP_EOL, FILE_APPEND);*/
+            //return $message['status_message'];
+        
+        }catch(WebhookReadErrorException $e){
+                
+        }
+        finally{
+            if(isset($e)){
+                /*ob_start();
+                var_dump($e->getMessage());
+                $input = ob_get_contents();
+                ob_end_clean();
+                file_put_contents('./assets/logAlterClientOmie.log', $input . PHP_EOL . date('d/m/Y H:i:s'), FILE_APPEND);*/
+                //print $e->getMessage();
+            
+                $message =[
+                    'status_code' => 500,
+                    'status_message' => $e->getMessage(),
+                ];
+               
+                return print 'ERROR: '.$message['status_code'].' MENSAGEM: '.$message['status_message'];
+               }
+
+            return print $message['status_message'];
+        }
 
     }
 

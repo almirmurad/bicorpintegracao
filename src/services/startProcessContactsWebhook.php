@@ -1,19 +1,18 @@
 <?php
 // require '../../vendor/autoload.php';
 // use GuzzleHttp\Client;
-// use GuzzleHttp\Handler\CurlFactory;
-// use GuzzleHttp\Handler\CurlHandler;
+
 // $client = new Client();
 
 // // $response = $client->request('GET','https://fiel.dev-webmurad.com.br/public/processWinDeal');
-//  $response = $client->post('http://localhost/integracao/public/processWinDeal',[
+//  $response = $client->post('http://localhost/integracao/public/processNewContact',[
 //     'headers' => [
 //         'Authorization' => 'Bearer your-token',
 //         'Accept'        => 'application/json',
 //     ],
 //     'json' => [
 //         'status'=>'1',
-//         'entity'=>'Deals'
+//         'entity'=>'Contacts'
 //     ]
 
 //  ]);
@@ -22,22 +21,16 @@
 // // $body = json_decode($response->getBody(),true); 
 // $body = $response->getBody(); 
 
-// echo 'body: '.$body;
-// $server = $_SERVER;
-// print '<pre>';
-// print_r($server);
-// print '</pre>';
-// exit;
 $headers = [
     
     'Content-Type: application/json',
 ];
 $array = [
     'status'=>'1',
-    'entity'=>'Deals'
+    'entity'=>'Contacts'
 ];
 $json = json_encode($array);
-$uri = 'https://fiel.bicorp.online/public/processWinDeal';
+$uri = 'https://fiel.bicorp.online/public/processNewContact';
 
 $curl = curl_init();
 
@@ -59,4 +52,4 @@ $curl = curl_init();
 
         curl_close($curl);
 
-       var_dump($response);
+       print_r($response);
