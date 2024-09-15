@@ -84,6 +84,14 @@ class InvoiceHandler
                 $omie->appSecret = $_ENV['SECRETS_MSC'];
                 $invoicing->target = 'MSC';
                 break;
+            case 4096962903033:
+                $omie->appSecret = $_ENV['SECRETS_FHML'];
+                $invoicing->target = 'FHML';
+                break;
+            case 4619691046971:
+                $omie->appSecret = $_ENV['SECRETS_RMA'];
+                $invoicing->target = 'RMA';
+                break;
             }
 
         // busca o pedido através id do pedido no omie retorna exceção se não encontra 
@@ -118,6 +126,12 @@ class InvoiceHandler
                         break;
                     case 'MSC':
                         $target = 'Manso-SC';
+                        break;
+                    case 'FHML':
+                        $target = 'Manso-FHML';
+                        break;
+                    case 'RMA':
+                        $target = 'Manso-RMA';
                         break;
                 }
                 $message['saveInvoicing'] = 'Novo faturamento armazenado na base de '.$target.' id: '.$idInvoicing;
@@ -203,11 +217,18 @@ class InvoiceHandler
                     $omie->target = 'MPR'; 
                     $target = 'Manos-PR';
                     break;
-                    
                 case 2597402735928: // MSC
                     $omie->target = 'MSC';                 
                     $target = 'Manos-SC';
-                    break;           
+                    break;  
+                case 4096962903033: // MSC
+                    $omie->target = 'FHML';                 
+                    $target = 'Fiel Homologação';
+                    break; 
+                case 4619691046971: // MSC
+                    $omie->target = 'RMA';                 
+                    $target = 'Roma';
+                    break; 
             }
 
             try{

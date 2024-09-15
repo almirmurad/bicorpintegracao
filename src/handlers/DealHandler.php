@@ -83,6 +83,7 @@ class DealHandler
         $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
    
         if($alterStatus){
+            
             $winDeal = Self::winDeal($hook);
             if(!isset($winDeal['winDeal']['error'])){
                 $status = 3; //Success
@@ -234,6 +235,9 @@ class DealHandler
             $deal->ownerId = $decoded['New']['OwnerId']; // Responsável
             ($mailVendedor = $this->ploomesServices->ownerMail($deal)) ? $mailVendedor: $m[] = 'Não foi encontrado o email deste vendedor. Id do card Ploomes CRM: '.$decoded['New']['Id'].' e pedido de venda Ploomes CRM: '.$decoded['New']['LastOrderId'].'em'.$current;
             //$mailVendedor = 'vendas9@fielpapeis.com.br';
+
+            // print_r($mailVendedor);
+            // exit;
     
             // $deal->startDate = $decoded['New']['StartDate']; // Início
             $deal->finishDate = $decoded['New']['FinishDate']; // Término
@@ -302,6 +306,26 @@ class DealHandler
                     $omie->ncc = $_ENV['NCC_MHL'];
                     $omie->appSecret = $_ENV['SECRETS_MHL'];
                     $omie->appKey = $_ENV['APPK_MHL'];
+                    break;
+
+                case 419821361: //Fiel
+                //case 410724733: //teste
+                    $deal->baseFaturamentoTitle = 'Fiel Homologação';
+                    $omie->baseFaturamentoTitle = 'Fiel Homologação';
+                    $omie->target = 'FHML'; 
+                    $omie->ncc = $_ENV['NCC_FHML'];
+                    $omie->appSecret = $_ENV['SECRETS_FHML'];
+                    $omie->appKey = $_ENV['APPK_FHML'];
+                    break;
+
+                case 419821362: //Fiel
+                //case 410724733: //teste
+                    $deal->baseFaturamentoTitle = 'Roma';
+                    $omie->baseFaturamentoTitle = 'Roma';
+                    $omie->target = 'RMA'; 
+                    $omie->ncc = $_ENV['NCC_RMA'];
+                    $omie->appSecret = $_ENV['SECRETS_RMA'];
+                    $omie->appKey = $_ENV['APPK_RMA'];
                     break;
 
                 default:

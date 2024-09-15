@@ -47,8 +47,6 @@ class ClientPloomesHandler
         // }
         if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" ){
 
-
-
             switch($decoded['appKey']){
                 case 2337978328686:               
                     $appSecret = $_ENV['SECRETS_MHL'];
@@ -77,31 +75,28 @@ class ClientPloomesHandler
                     
                     break;
                     
-                    case 2335095664902:
+                case 2335095664902:
 
-                        $appSecret = $_ENV['SECRETS_MPR'];
-                        // Monta o objeto de Order Homologação com os dados do webhook
-                        $order = new Manospr_order();
-                        $order->idOmie = $decoded['event']['idPedido'];
-                        $order->codCliente = $decoded['event']['idCliente'];
-                        //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                        $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
-                        $order->numPedidoOmie = $decoded['event']['numeroPedido'];
-                        //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                        $order->numContaCorrente = $decoded['event']['idContaCorrente'];
-                        $order->codVendedorOmie = $decoded['author']['userId'];
-                        //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
-                        $order->appKey = $decoded['appKey'];
+                    $appSecret = $_ENV['SECRETS_MPR'];
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new Manospr_order();
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];
 
+                    try{
                         
-
+                        $id = ManosPrOrderHandler::saveManosPrOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
                         
-                        try{
-                            
-                            $id = ManosPrOrderHandler::saveManosPrOrder($order);
-                            $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
-                           
-        
+    
                     }catch(PDOException $e){
                         echo $e->getMessage();
                         throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
@@ -129,6 +124,33 @@ class ClientPloomesHandler
                         $id = ManosScOrderHandler::saveManosScOrder($order);
                         $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-SC id '.$id.'em: '.$current;
                        
+        
+                    }catch(PDOException $e){
+                        echo $e->getMessage();
+                        throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+                    }
+
+                    break;
+                case 4096962903033:
+                    $appSecret = $_ENV['SECRETS_FHML'];
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new Manossc_order();
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = $decoded['event']['numeroPedido'];
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->numContaCorrente = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];
+
+                    try{
+
+                        $id = ManosScOrderHandler::saveManosScOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-SC id '.$id.'em: '.$current;
+                        
         
                     }catch(PDOException $e){
                         echo $e->getMessage();

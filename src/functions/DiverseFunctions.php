@@ -25,11 +25,12 @@ class DiverseFunctions{
         return $datePtFn;
     }
 
-    public static function limpa_cpf_cnpj($valor){
+    public static function limpa_cpf_cnpj($valor)
+    {
         $valor = trim($valor);
         $valor = str_replace(array('.','-','/'), "", $valor);
         return $valor;
-       }
+    }
 
     public static function calculaParcelas($dataInicio,$totalParcelas,$totalPedido)
     {

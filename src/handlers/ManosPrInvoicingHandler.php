@@ -52,9 +52,8 @@ class ManosPrInvoicingHandler
 
     }
 
-    public static function alterManosPrInvoiceHandler($orderNumber){
-
-
+    public static function alterManosPrInvoiceHandler($orderNumber)
+    {
         try{
 
             Manospr_invoicing::update()

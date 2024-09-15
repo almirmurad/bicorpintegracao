@@ -3,15 +3,14 @@
 namespace src\handlers;
 
 use PDOException;
-use src\models\Homologacao_invoicing;
-use src\models\Homologacao_order;
+use src\models\FielHomologacao_invoicing;
 
-class HomologacaoInvoicingHandler
+class FielHomologacaoInvoicingHandler
 {
     
-    public static function saveHomologacaoInvoicing($invoicing)
+    public static function saveFielHomologacaoInvoicing($invoicing)
     {   
-        $id = Homologacao_invoicing::insert(
+        $id = FielHomologacao_invoicing::insert(
             [
                 'stage'=>$invoicing->etapa,
                 'invoicing_date'=>$invoicing->dataFaturado,
@@ -38,7 +37,7 @@ class HomologacaoInvoicingHandler
 
         try{
 
-        $id = Homologacao_invoicing::select('id')
+        $id = FielHomologacao_invoicing::select('id')
                 ->where('order_id',$orderNumber)
                 ->where('is_canceled',0)
                 ->execute();       
@@ -52,11 +51,12 @@ class HomologacaoInvoicingHandler
 
     }
 
-    public static function alterHomologacaoInvoice($orderNumber)
-    {
+    public static function alterHomologacaoInvoice($orderNumber){
+
+
         try{
 
-            Homologacao_invoicing::update()
+            FielHomologacao_invoicing::update()
                 ->set('is_canceled', 1)
                 ->set('updated_atdb', date('Y-m-d H:i:s'))
                 ->where('order_id',$orderNumber)
@@ -67,5 +67,6 @@ class HomologacaoInvoicingHandler
         }catch(PDOException $e){
             return $e->getMessage();
         }
+
     }
 }

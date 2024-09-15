@@ -10,6 +10,8 @@ use src\exceptions\PedidoDuplicadoException;
 use src\exceptions\WebhookReadErrorException;
 use src\models\Cliente;
 use src\models\Deal;
+use src\models\FielHomologacao_invoicing;
+use src\models\FielHomologacao_order;
 use src\models\Homologacao_invoicing;
 use src\models\Homologacao_order;
 use src\models\Log;
@@ -17,6 +19,8 @@ use src\models\Manospr_invoicing;
 use src\models\Manospr_order;
 use src\models\Manossc_invoicing;
 use src\models\Manossc_order;
+use src\models\Roma_invoicing;
+use src\models\Roma_order;
 use src\models\Webhook;
 
 class DatabaseServices implements DatabaseManagerInterface{
@@ -44,7 +48,8 @@ class DatabaseServices implements DatabaseManagerInterface{
         
     }
     //BUSCA NO BANCO DE DADOS INFORMAÇÕES DO WEBHOOK A SER PROCESSADO.
-    public function getWebhook($status, $entity){
+    public function getWebhook($status, $entity)
+    {
         try{
             $hook = Webhook::select()->where('status', $status)->where('entity',$entity)->orderBy('created_at')->one();
             return (!$hook ? throw new WebhookReadErrorException('Não existem '.$entity.' pendentes a serem processados no momento. Data: '.date('d/m/Y H:i:s').PHP_EOL, 552) : $hook);
@@ -55,7 +60,8 @@ class DatabaseServices implements DatabaseManagerInterface{
       
     }
     //ALTERA O STATUS DO WEBHOOK
-    public function alterStatusWebhook($id, $statusId){
+    public function alterStatusWebhook($id, $statusId)
+    {
         // print 'id do webhook no bd = '.$id. PHP_EOL;
         // print 'Id do status para mudar na base = '.$statusId. PHP_EOL;
 
@@ -82,7 +88,6 @@ class DatabaseServices implements DatabaseManagerInterface{
         }
       
     }
-
     //SALVA LOG NO BANCO DE DADOS COM AS INFORMAÇÕES DO ERRO
     public function registerLog($idWebhook, $message, $entity)
     {   
@@ -164,8 +169,14 @@ class DatabaseServices implements DatabaseManagerInterface{
             case 'MSC':
                 $database = new Manossc_order();
                 break;
+            case 'FHML':
+                $database = new FielHomologacao_order();
+                break;
+            case 'RMA':
+                $database = new Roma_order();
+                break;
         }
-
+       
         try{
 
             $id = $database::insert(
@@ -196,8 +207,8 @@ class DatabaseServices implements DatabaseManagerInterface{
         
     }
     //VERIFICAR SE EXISTE A ORDEM NA BASE DE DADOS
-    public function isIssetOrder(int $orderNumber, string $target){
-
+    public function isIssetOrder(int $orderNumber, string $target)
+    {
         switch($target){
             case 'MHL':
                 $database = new Homologacao_order();
@@ -207,6 +218,12 @@ class DatabaseServices implements DatabaseManagerInterface{
                 break;
             case 'MSC':
                 $database = new Manossc_order();
+                break;
+            case 'FHML':
+                $database = new FielHomologacao_order();
+                break;
+            case 'RMA':
+                $database = new Roma_order();
                 break;
         }
 
@@ -226,7 +243,6 @@ class DatabaseServices implements DatabaseManagerInterface{
     //EXCLUI A ORDEM DA BASE DE DADOS
     public function excluiOrder(int $orderNumber, string $target):bool
     {
-
         switch($target){
             case 'MHL':
                 $database = new Homologacao_order();
@@ -236,6 +252,12 @@ class DatabaseServices implements DatabaseManagerInterface{
                 break;
             case 'MSC':
                 $database = new Manossc_order();
+                break;
+            case 'FHML':
+                $database = new FielHomologacao_order();
+                break;
+            case 'RMA':
+                $database = new Roma_order();
                 break;
         }
 
@@ -263,6 +285,12 @@ class DatabaseServices implements DatabaseManagerInterface{
             case 'MSC':
                 $database = new Manossc_order();
                 break;
+            case 'FHML':
+                $database = new FielHomologacao_order();
+                break;
+            case 'MSC':
+                $database = new Roma_order();
+                break;
         }
 
         try{
@@ -283,7 +311,8 @@ class DatabaseServices implements DatabaseManagerInterface{
     }
 
     //SALVA A NOTA FISCAL NO BANCO DE DADOS
-    public function saveInvoicing(object $invoicing){
+    public function saveInvoicing(object $invoicing)
+    {
 
         switch($invoicing->target){
             case 'MHL':
@@ -294,6 +323,12 @@ class DatabaseServices implements DatabaseManagerInterface{
                 break;
             case 'MSC':
                 $database = new Manossc_invoicing();
+                break;
+            case 'FHML':
+                $database = new FielHomologacao_invoicing();
+                break;
+            case 'RMA':
+                $database = new Roma_invoicing();
                 break;
         }
 
@@ -340,6 +375,12 @@ class DatabaseServices implements DatabaseManagerInterface{
             case 'MSC':
                 $database = new Manossc_invoicing();
                 break;
+            case 'FHML':
+                $database = new FielHomologacao_invoicing();
+                break;
+            case 'RMA':
+                $database = new Roma_invoicing();
+                break;
         }
         try{
 
@@ -367,6 +408,12 @@ class DatabaseServices implements DatabaseManagerInterface{
             case 'MSC':
                 $database = new Manossc_invoicing();
                 break;
+            case 'FHML':
+                $database = new FielHomologacao_invoicing();
+                break;
+            case 'RMA':
+                $database = new Roma_invoicing();
+                break;
         }
 
         try{
@@ -384,7 +431,8 @@ class DatabaseServices implements DatabaseManagerInterface{
         }
     }
 
-    public function getClient($status){
+    public function getClient($status)
+    {
         try{
             $hook = Cliente::select()->where('status', $status)->orderBy('created_at')->one();
             return (!$hook ? throw new WebhookReadErrorException('Não existem clientes pendentes a serem processados no momento. Data: '.date('d/m/Y H:i:s').PHP_EOL, 552) : $hook);
@@ -392,8 +440,6 @@ class DatabaseServices implements DatabaseManagerInterface{
         }catch(PDOException $e){
             throw new WebhookReadErrorException('Erro ao buscar o webhook na base de dados: '.$e->getMessage(). 'Data: '.date('d/m/Y H:i:s'), 552);
         }
-
-
     }
 
 

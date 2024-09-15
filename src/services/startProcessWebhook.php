@@ -37,7 +37,10 @@ $array = [
     'entity'=>'Deals'
 ];
 $json = json_encode($array);
-$uri = 'https://fiel.bicorp.online/public/processWinDeal';
+
+//$uri = 'https://fiel.bicorp.online/public/processWinDeal';
+$uri = 'http://localhost/bicorpIntegracao/public/processWinDeal';
+
 
 $curl = curl_init();
 

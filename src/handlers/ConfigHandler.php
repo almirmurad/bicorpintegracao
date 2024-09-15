@@ -59,6 +59,46 @@ class ConfigHandler{
         return Self::montaArray($file, $keys);
     }
 
+    public static function configOmieFhml($SK='',$APPK='',$NCC=''){
+        
+        $file = parse_ini_file('../.env');
+        switch($file){
+            case isset($file['SECRETS_FHML']) && !empty($file['SECRETS_FHML']) && $file['SECRETS_FHML'] != $SK && $SK != '':
+                $file['SECRETS_FHML'] = $SK;
+                break;
+            case isset($file['APPK_FHML']) && !empty($file['APPK_FHML']) && $file['APPK_FHML'] != $APPK && $APPK !='':
+                $file['APPK_FHML'] = $APPK;
+                break;
+            case isset($file['NCC_FHML']) && !empty($file['NCC_FHML']) && $file['NCC_FHML'] != $NCC && $NCC != $NCC:
+                $file['NCC_FHML'] = $NCC;
+                break;  
+        }
+        $keys = array('SECRETS_FHML'=>$SK,'APPK_FHML'=>$APPK,'NCC_FHML'=>$NCC);
+        return Self::montaArray($file, $keys); 
+
+
+    }
+
+    public static function configOmieRma($SK='',$APPK='',$NCC=''){
+        
+        $file = parse_ini_file('../.env');
+        switch($file){
+            case isset($file['SECRETS_RMA']) && !empty($file['SECRETS_RMA']) && $file['SECRETS_RMA'] != $SK && $SK != '':
+                $file['SECRETS_RMA'] = $SK;
+                break;
+            case isset($file['APPK_RMA']) && !empty($file['APPK_RMA']) && $file['APPK_RMA'] != $APPK && $APPK !='':
+                $file['APPK_RMA'] = $APPK;
+                break;
+            case isset($file['NCC_RMA']) && !empty($file['NCC_RMA']) && $file['NCC_RMA'] != $NCC && $NCC != $NCC:
+                $file['NCC_RMA'] = $NCC;
+                break;  
+        }
+        $keys = array('SECRETS_RMA'=>$SK,'APPK_RMA'=>$APPK,'NCC_RMA'=>$NCC);
+        return Self::montaArray($file, $keys); 
+
+
+    }
+
     public static function configPloomesApk($PLM_APK=''){  
         $file = parse_ini_file('../.env');
         switch($file){  

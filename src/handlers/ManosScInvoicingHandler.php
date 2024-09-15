@@ -34,8 +34,8 @@ class ManosScInvoicingHandler
         return $id;
     }
 
-    public static function isIssetInvoice($orderNumber){
-
+    public static function isIssetInvoice($orderNumber)
+    {
         try{
 
         $id = Manossc_invoicing::select('id')
@@ -52,9 +52,8 @@ class ManosScInvoicingHandler
 
     }
 
-    public static function alterManosScInvoice($orderNumber){
-
-
+    public static function alterManosScInvoice($orderNumber)
+    {
         try{
 
             Manossc_invoicing::update()
@@ -68,6 +67,5 @@ class ManosScInvoicingHandler
         }catch(PDOException $e){
             return $e->getMessage();
         }
-
     }
 }

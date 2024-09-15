@@ -69,7 +69,6 @@ class ClientHandler
     //PROCESSA E CRIA O cliente. CHAMA O REPROCESS CASO DE ERRO
     public function startProcess($status, $entity)
     {   
-  
         /*
         * inicia o processo de crição de cliente, caso de certo retorna mensagem de ok pra gravar em log, e caso de erro retorna falso
         */
@@ -84,10 +83,8 @@ class ClientHandler
                 $status = 3; //Success
                 $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
                 if($alterStatus){
-                    
                     return $createClient;//card processado cliente criado no Omie retorna mensagem winDeal para salvar no log
                 }
-
             }else{
                 $status = 4; //falhou
                 $alterStatus = $this->databaseServices->alterStatusWebhook($hook['id'], $status);
@@ -96,19 +93,16 @@ class ClientHandler
 
                 //if($reprocess['contactsCreate']['error']){
 
-                    $log = $this->databaseServices->registerLog($hook['id'], $createClient['contactsCreate']['error'], $hook['entity']); 
-
-                    
-                    throw new WebhookReadErrorException('Erro ao gravar cliente: '.$createClient['contactsCreate']['error'].'Salvo em logs do sistema (log id: '.$log.')'. date('d/m/Y H:i:s'), 500);
-                    
-                    //return $reprocess['contactsCreate']['error'];
-
-                }
+                $log = $this->databaseServices->registerLog($hook['id'], $createClient['contactsCreate']['error'], $hook['entity']); 
                 
+                throw new WebhookReadErrorException('Erro ao gravar cliente: '.$createClient['contactsCreate']['error'].'Salvo em logs do sistema (log id: '.$log.')'. date('d/m/Y H:i:s'), 500);
+                
+                //return $reprocess['contactsCreate']['error'];
             }
         }
-                 
     }
+                 
+
 
     //REPROCESSA O CARD COM FALHA
     public function reprocessWebhook($hook){

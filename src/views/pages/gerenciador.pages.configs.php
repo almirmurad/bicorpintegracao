@@ -164,7 +164,106 @@
                         <!-- Fim infoBox -->    
                     </div>
                 </div>
-                
+
+                <div class="config-bottom">
+
+                    <div class="content-config">
+                        <!-- Início infoBox -->
+                        <div class="info-Box">
+                            <div class="title">
+                                <h2>Fiel.com Homologação</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <div class="area-form-configs">
+            
+                                        <form method="post" action="<?= $base ?>/define">
+                                            
+                                            <div class="campo">
+                                                <label class="form-lbl" for="secretKeyFhml">SECRET_KEY</label>
+                                                <input type="text" class="form-cmps" name="secretKeyFhml" id="secretKeyFhml">
+                                                
+                                            </div>
+                                            <div class="campo">
+                                                <label class="form-lbl" for="appKeyFhml">APP_KEY</label>
+                                                <input type="text" class="form-cmps" name="appKeyFhml" id="appKeyFhml">
+                                            </div>
+                                            <div class="campo">
+                                                <label class="form-lbl" for="nccFhml">NCC</label>
+                                                <input type="text" class="form-cmps" name="nccFhml" id="nccFhml" placeholder="Número da conta corrente">
+                                            </div>
+                                            
+                                            <button type="submit" class="btn-submit" name="submitFhml">Enviar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-Box">
+                            <div class="title">
+                                <h2>Roma</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <div class="area-form-configs">
+                                        
+                                        <form method="post" action="<?= $base ?>/define">
+                                            
+                                        <div class="campo">
+                                                <label class="form-lbl" for="secretKeyRma">SECRET_KEY</label>
+                                                <input type="text" class="form-cmps" name="secretKeyRma" id="secretKeyRma">
+                                                
+                                            </div>
+                                            <div class="campo">
+                                                <label class="form-lbl" for="appKeyRma">APP_KEY</label>
+                                                <input type="text" class="form-cmps" name="appKeyRma" id="appKeyRma">
+                                            </div>
+                                            <div class="campo">
+                                                <label class="form-lbl" for="nccRma">NCC</label>
+                                                <input type="text" class="form-cmps" name="nccRma" id="nccRma" placeholder="Número da conta corrente">
+                                            </div>
+                                            
+                                            <button type="submit" class="btn-submit" name="submitRma">Enviar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="info-Box">
+                            <div class="title">
+                                <h2>Manos Homologação</h2>
+                            </div>
+                            <div class="content-box">
+                                <div class="content-info">
+                                    <div class="area-form-configs">
+                                        
+                                        <form method="post" action="<?= $base ?>/define">
+                                            
+                                            <div class="campo">
+                                                <label class="form-lbl" for="secretKeyMhl">SECRET_KEY</label>
+                                                <input type="text" class="form-cmps" name="secretKeyMhl" id="secretKeyMhl">
+                                                
+                                            </div>
+                                            <div class="campo">
+                                                <label class="form-lbl" for="appKeyMhl">APP_KEY</label>
+                                                <input type="text" class="form-cmps" name="appKeyMhl" id="appKeyMhl">
+                                            </div>
+                                            <div class="campo">
+                                                <label class="form-lbl" for="nccMhl">NCC</label>
+                                                <input type="text" class="form-cmps" name="nccMhl" id="nccMhl" placeholder="Número da conta corrente">
+                                            </div>
+                                            
+                                            <button type="submit" class="btn-submit" name="submitMhl">Enviar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>      
+                        <!-- Fim infoBox -->    
+                    </div>
+                </div>
 
                 
             </div>

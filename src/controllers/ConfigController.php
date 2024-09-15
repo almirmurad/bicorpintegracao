@@ -65,6 +65,22 @@ class ConfigController extends Controller {
             $define = ConfigHandler::configOmieMhl($MHL_SK,$MHL_APPK,$MHL_NCC);
             
 
+        }elseif(isset($_POST['submitFhml'])){
+
+            $FHML_SK = filter_input(INPUT_POST, 'secretKeyFhml',FILTER_SANITIZE_SPECIAL_CHARS);
+            $FHML_APPK = filter_input(INPUT_POST, 'appKeyFhml',FILTER_SANITIZE_SPECIAL_CHARS);
+            $FHML_NCC = filter_input(INPUT_POST, 'nccFhml', FILTER_VALIDATE_INT);
+            $define = ConfigHandler::configOmieFhml($FHML_SK,$FHML_APPK,$FHML_NCC);
+            
+
+        }elseif(isset($_POST['submitRma'])){
+
+            $RMA_SK = filter_input(INPUT_POST, 'secretKeyRma',FILTER_SANITIZE_SPECIAL_CHARS);
+            $RMA_APPK = filter_input(INPUT_POST, 'appKeyRma',FILTER_SANITIZE_SPECIAL_CHARS);
+            $RMA_NCC = filter_input(INPUT_POST, 'nccRma', FILTER_VALIDATE_INT);
+            $define = ConfigHandler::configOmieRma($RMA_SK,$RMA_APPK,$RMA_NCC);
+            
+
         }elseif(isset($_POST['submitPlm'])){
             $PLM_APK = filter_input(INPUT_POST, 'apiKeyPlm',FILTER_SANITIZE_SPECIAL_CHARS);
             $define = ConfigHandler::configPloomesApk($PLM_APK);

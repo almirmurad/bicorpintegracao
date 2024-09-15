@@ -43,8 +43,8 @@ class OmieOrderHandler
 
         if($decoded['topic'] === "VendaProduto.Incluida" && $decoded['event']['etapa'] == "10" && $decoded['event']['usuarioInclusao'] !== 'WEBSERVICE'){
 
-            switch($decoded['appKey']){
-
+            switch($decoded['appKey'])
+            {
                 case 2337978328686:               
                     // Monta o objeto de Order Homologação com os dados do webhook
                     $order = new stdClass();
@@ -74,28 +74,28 @@ class OmieOrderHandler
                     
                     break;
                     
-                    case 2335095664902:
-                        // Monta o objeto de Order Homologação com os dados do webhook
-                        $order = new stdClass();
-                        $order->target = 'MPR';
-                        $order->appSecret = $_ENV['SECRETS_MPR'];
-                        $order->idOmie = $decoded['event']['idPedido'];
-                        $order->codCliente = $decoded['event']['idCliente'];
-                        //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                        $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
-                        $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
-                        //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
-                        $order->ncc = $decoded['event']['idContaCorrente'];
-                        $order->codVendedorOmie = $decoded['author']['userId'];
-                        //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
-                        $order->appKey = $decoded['appKey'];
+                case 2335095664902:
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new stdClass();
+                    $order->target = 'MPR';
+                    $order->appSecret = $_ENV['SECRETS_MPR'];
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->ncc = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];
 
-                        try{
-                            
-                            $id = $this->databaseServices->saveOrder($order);
-                            $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
-                           
-        
+                    try{
+                        
+                        $id = $this->databaseServices->saveOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Manos-PR id '.$id.'em: '.$current;
+                        
+    
                     }catch(PDOException $e){
                         echo $e->getMessage();
                         throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
@@ -131,7 +131,65 @@ class OmieOrderHandler
                     }
 
                     break;
-                }
+
+                case 4096962903033:
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new stdClass();
+                    $order->target = 'FHML';
+                    $order->appSecret = $_ENV['SECRETS_FHML'];
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->ncc = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];
+
+                    try{
+
+                        $id = $this->databaseServices->saveOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Fiel.com Homologação id '.$id.'em: '.$current;
+                        
+        
+                    }catch(PDOException $e){
+                        echo $e->getMessage();
+                        throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+                    }
+
+                    break;
+                
+                case 4619691046971:
+                    // Monta o objeto de Order Homologação com os dados do webhook
+                    $order = new stdClass();
+                    $order->target = 'RMA';
+                    $order->appSecret = $_ENV['SECRETS_RMA'];
+                    $order->idOmie = $decoded['event']['idPedido'];
+                    $order->codCliente = $decoded['event']['idCliente'];
+                    //$order->codPedidoIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->dataPrevisao = $decoded['event']['dataPrevisao']; 
+                    $order->numPedidoOmie = intval($decoded['event']['numeroPedido']);
+                    //$order->codClienteIntegracao = $decoded['event']['idPedido']; (não vem no webhook)
+                    $order->ncc = $decoded['event']['idContaCorrente'];
+                    $order->codVendedorOmie = $decoded['author']['userId'];
+                    //$order->idVendedorPloomes = $decoded['event']['idPedido']; (não vem no webhook)       
+                    $order->appKey = $decoded['appKey'];
+
+                    try{
+
+                        $id = $this->databaseServices->saveOrder($order);
+                        $message['order']['newOrder'] = 'Novo pedido salvo na base de dados de pedidos de Roma id '.$id.'em: '.$current;
+                        
+        
+                    }catch(PDOException $e){
+                        echo $e->getMessage();
+                        throw new PedidoDuplicadoException('<br> Pedido Nº: '.$order->numPedidoOmie.' já cadastrado no omie em: '. $current, 1500);
+                    }
+
+                    break;
+            }
             
             
             //busca o cnpj do cliente através do id do omie
@@ -176,6 +234,16 @@ class OmieOrderHandler
                     $order->appSecret = $_ENV['SECRETS_MSC'];
                     $order->target = 'MSC';
                     $order->baseTitle = 'Manos-SC';
+                    break;
+                case 2597402735928:
+                    $order->appSecret = $_ENV['SECRETS_FHML'];
+                    $order->target = 'FHML';
+                    $order->baseTitle = 'Fiel Homolgação';
+                    break;
+                case 2597402735928:
+                    $order->appSecret = $_ENV['SECRETS_RMA'];
+                    $order->target = 'RMA';
+                    $order->baseTitle = 'Roma';
                     break;
                 }
 
@@ -304,7 +372,7 @@ class OmieOrderHandler
                         throw new PedidoCanceladoException($e->getMessage(), 1031);
                     }
 
-                 break;
+                break;
                     
                 case 2335095664902: // MPR
                     $omie->appSecret = $_ENV['SECRETS_MPR'];
@@ -401,6 +469,104 @@ class OmieOrderHandler
                     }
                     
                 break;
+
+                case 4096962903033: // FHML
+                    $omie->appSecret = $_ENV['SECRETS_FHML'];
+                    $omie->target = 'FHML';
+                    try{
+                        $id = $this->databaseServices->isIssetOrder($decoded['event']['idPedido'], $omie->target);
+                        if(is_string($id)){
+                            throw new PedidoInexistenteException('Erro ao consultar a base de dados de pedidos de Fiel.com Homologação. Erro: '.$id. ' - '.$current, 1030);
+                            }elseif(empty($id)){
+                            throw new PedidoInexistenteException('Pedido não cadastrada na base de dados de pedidos de Fiel.com Homologação, ou já foi cancelado. - '.$current, 1030);
+                        }else{$message['order']['issetOrder'] = 'Pedido '. $decoded['event']['idPedido'] .'encontrada na base. - '.$current;
+                        }
+
+                    }catch(PedidoInexistenteException $e){
+                        throw new PedidoInexistenteException($e->getMessage());
+                    }
+
+                    //exclui pedido da base de dados caso seja uma venda excluída
+                    if($decoded['topic'] === "VendaProduto.Excluida"){
+                        try{                           
+                            $message['order']['isdeleted'] = $this->databaseServices->excluiOrder($decoded['event']['idPedido'], $omie->target);
+
+                            if(is_string($message['order']['isdeleted'])){
+                                throw new PedidoNaoExcluidoException($message['order']['isdeleted']);
+                            }
+                        }
+                        catch(PedidoNaoExcluidoException $e)
+                        {
+                            throw new PedidoNaoExcluidoException($e->getMessage());
+                        }
+                    }
+                            
+                    //altera o pedido no banco para cancelado
+                    try{
+                        //Altera o pedido para cancelado no banco MPR
+                        $altera = $this->databaseServices->alterOrder($decoded['event']['idPedido'], $omie->target);
+
+                        if(is_string($altera)){
+                            throw new PedidoCanceladoException('Erro ao consultar a base de dados de Fiel.com Homologação. Erro: '.$altera. 'em '.$current, 1030);                     
+                        }
+
+                        $message['order']['iscanceled'] = 'Pedido '. $decoded['event']['idPedido'] .'cancelado com sucesso em '.$current;
+                        
+                    }catch(PedidoCanceladoException $e){          
+                        throw new PedidoCanceladoException($e->getMessage(), 1031);
+                    }
+                    
+                break;
+
+                case 4619691046971: // RMA
+                    $omie->appSecret = $_ENV['SECRETS_RMA'];
+                    $omie->target = 'RMA';
+                    try{
+                        $id = $this->databaseServices->isIssetOrder($decoded['event']['idPedido'], $omie->target);
+                        if(is_string($id)){
+                            throw new PedidoInexistenteException('Erro ao consultar a base de dados de pedidos de Roma. Erro: '.$id. ' - '.$current, 1030);
+                            }elseif(empty($id)){
+                            throw new PedidoInexistenteException('Pedido não cadastrada na base de dados de pedidos de Roma , ou já foi cancelado. - '.$current, 1030);
+                        }else{$message['order']['issetOrder'] = 'Pedido '. $decoded['event']['idPedido'] .'encontrada na base. - '.$current;
+                        }
+
+                    }catch(PedidoInexistenteException $e){
+                        throw new PedidoInexistenteException($e->getMessage());
+                    }
+
+                    //exclui pedido da base de dados caso seja uma venda excluída
+                    if($decoded['topic'] === "VendaProduto.Excluida"){
+                        try{                           
+                            $message['order']['isdeleted'] = $this->databaseServices->excluiOrder($decoded['event']['idPedido'], $omie->target);
+
+                            if(is_string($message['order']['isdeleted'])){
+                                throw new PedidoNaoExcluidoException($message['order']['isdeleted']);
+                            }
+                        }
+                        catch(PedidoNaoExcluidoException $e)
+                        {
+                            throw new PedidoNaoExcluidoException($e->getMessage());
+                        }
+                    }elseif($decoded['topic'] === "VendaProduto.Cancelada"){
+
+                        //altera o pedido no banco para cancelado
+                        try{
+                            //Altera o pedido para cancelado no banco MPR
+                            $altera = $this->databaseServices->alterOrder($decoded['event']['idPedido'], $omie->target);
+    
+                            if(is_string($altera)){
+                                throw new PedidoCanceladoException('Erro ao consultar a base de dados de Roma. Erro: '.$altera. 'em '.$current, 1030);                     
+                            }
+    
+                            $message['order']['iscanceled'] = 'Pedido '. $decoded['event']['idPedido'] .'cancelado com sucesso em '.$current;
+                            
+                        }catch(PedidoCanceladoException $e){          
+                            throw new PedidoCanceladoException($e->getMessage(), 1031);
+                        }
+                    }
+                            
+                    
+                break;
             }
 
             
@@ -456,6 +622,12 @@ class OmieOrderHandler
 
             case 2597402735928: // MSC
                 $omie->appSecret = $_ENV['SECRETS_MSC'];
+                break;
+            case 4096962903033: // FHML
+                $omie->appSecret = $_ENV['SECRETS_FHML'];
+                break;
+            case 4619691046971: // RMA
+                $omie->appSecret = $_ENV['SECRETS_RMA'];
                 break;
         }
 
